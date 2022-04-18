@@ -106,24 +106,24 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     public var body: some View {
-        ScrollView {
-            ZStack(alignment: .top) {
-                VStack(spacing: 0) {
-                    if isRefreshing && !overlay {
-                        Color.clear
-                            .frame(height: headerShimMaxHeight * (1 - percent))
-                    }
-                    content()
-                }
-                GeometryReader { globalGeometry in
-                    RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, headerInset: $headerInset, onRefresh: onRefresh, refreshView: refreshView)
-                        .onAppear {
-                            // For some `globalGeometry.frame(in: .global).minY` is 0 when onAppear is called.
-                            // Put it on the next event loop run and it is correctly updated.
-                            DispatchQueue.main.async {
-                                headerInset = globalGeometry.frame(in: .global).minY
-                            }
+        GeometryReader { globalGeometry in
+            ScrollView {
+                ZStack(alignment: .top) {
+                    VStack(spacing: 0) {
+                        if isRefreshing && !overlay {
+                            Color.clear
+                                .frame(height: headerShimMaxHeight * (1 - percent))
                         }
+                        content()
+                    }
+                    RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, headerInset: $headerInset, onRefresh: onRefresh, refreshView: refreshView)
+                }
+                .onAppear {
+                    // For some `globalGeometry.frame(in: .global).minY` is 0 when onAppear is called.
+                    // Put it on the next event loop run and it is correctly updated.
+                    DispatchQueue.main.async {
+                        headerInset = globalGeometry.safeAreaInsets.top
+                    }
                 }
             }
         }
