@@ -23,7 +23,7 @@ public struct RefreshControlView<RefreshView: View>: View {
     @Binding var isRefreshing: Bool
     @Binding var percent: CGFloat
     @State var innerHeight: CGFloat = 0
-    @State var headerInset: CGFloat? = nil
+    @Binding var headerInset: CGFloat
     @State var allowRefresh = true
     
     @State private var refreshAt: CGFloat = 120
@@ -58,19 +58,15 @@ public struct RefreshControlView<RefreshView: View>: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeometryReader { geometry in
-                if headerInset != nil {
+                // Nan by default. Don't show the spinner until we have a header inset.
+                if !headerInset.isNaN {
                     refreshView()
                         .frame(maxWidth: .infinity)
-                        .offset(y: offset(geometry.frame(in: .global).minY - (headerInset ?? 0)))
+                        .offset(y: offset(geometry.frame(in: .global).minY - headerInset))
                 }
                 Spacer(minLength: 0)
                     .onChange(of: geometry.frame(in: .global).minY) { value in
-                        // Hack to get the header content inset without passing it in as a global
-                        if headerInset == nil {
-                            headerInset = value
-                        }
-                        
-                        let percent = normalize(from: 0, to: refreshAt, by: value - (headerInset ?? 0))
+                        let percent = normalize(from: 0, to: refreshAt, by: value - headerInset)
                         DispatchQueue.main.async {
                             self.percent = percent
                         }
@@ -92,6 +88,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @State private var percent: CGFloat = 0
     @State private var headerShimMaxHeight: CGFloat = 50
     @State private var isRefreshing = false
+    @State private var headerInset: CGFloat = .nan
     
     @State var overlay = false
     var content: () -> Content
@@ -109,8 +106,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     public var body: some View {
-        GeometryReader { globalGeometry in
-            ScrollView {
+        ScrollView {
+            GeometryReader { globalGeometry in
                 ZStack(alignment: .top) {
                     VStack(spacing: 0) {
                         if isRefreshing && !overlay {
@@ -119,7 +116,14 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         }
                         content()
                     }
-                    RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, onRefresh: onRefresh, refreshView: refreshView)
+                    RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, headerInset: $headerInset, onRefresh: onRefresh, refreshView: refreshView)
+                }
+                .onAppear {
+                    // For some `globalGeometry.frame(in: .global).minY` is 0 when onAppear is called.
+                    // Put it on the next event loop run and it is correctly updated.
+                    DispatchQueue.main.async {
+                        headerInset = globalGeometry.frame(in: .global).minY
+                    }
                 }
             }
         }
