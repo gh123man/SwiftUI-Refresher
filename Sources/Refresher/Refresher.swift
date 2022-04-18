@@ -26,7 +26,7 @@ public struct RefreshControlView<RefreshView: View>: View {
     @State var headerInset: CGFloat? = nil
     @State var allowRefresh = true
     
-    @State private var refreshAt: CGFloat = 140
+    @State private var refreshAt: CGFloat = 120
     
     var onRefresh: (@escaping () -> ()) -> ()
     
