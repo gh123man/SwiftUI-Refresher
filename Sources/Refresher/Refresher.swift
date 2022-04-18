@@ -71,6 +71,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
     @State var distance: CGFloat = 0
+    @State var canRefresh = true
     var overlay: Bool
     
     init(
@@ -139,7 +140,11 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     
     private func offsetChanged(_ newOffset: CGPoint) {
         distance = newOffset.y
+        if distance < 1 {
+            canRefresh = true
+        }
         if case .refreshing = state { return }
+        if !canRefresh { return }
 
         guard newOffset.y > 0 else {
             state = .notRefreshing
@@ -149,6 +154,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if newOffset.y >= refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             state = .refreshing
+            canRefresh = false
 
             refreshAction {
                 DispatchQueue.main.async {
