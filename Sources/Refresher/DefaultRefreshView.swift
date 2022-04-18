@@ -10,5 +10,6 @@ public struct DefaultRefreshView: View {
                 .padding(5)
         }
         .background(BlurView(style: colorScheme == .dark ? .dark : .light))
+        .clipShape(Circle())
     }
 }

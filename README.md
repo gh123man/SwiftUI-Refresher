@@ -1,6 +1,6 @@
 # Refresher
 
-A native swift UI refresh control for ios 14+
+A native Swift UI refresh control for iOS 14+
 
 ## Why?
 
@@ -37,19 +37,41 @@ struct MyView: View {
 
 ## Options
 
+See: [Examples](/Examples/SimpleExample.swift) for source for gifs below.
+
 ### Navigation view
-![bla](/images/nav.gif)
+![nav](/images/nav.gif)
 
 
 ### Detail view (no overlay)
 
 `RefreshableScrollView(overlay: false)` (false is the default)
 
-![bla](/images/details1.gif)
+![no-overlay](/images/details1.gif)
 
 
 ### Detail view with overlay
 
 `RefreshableScrollView(overlay: true)`
 
-![bla](/images/details2.gif)
+![overlay](/images/details2.gif) 
+
+## Advanced
+
+Use a custom refresh view
+
+```swift
+ RefreshableScrollView(refreshView: {
+            Text("Refreshing...")
+        }, onRefresh: { done in
+            ...
+```
+
+![advanced](/images/advanced.gif)
+
+
+TODO: 
+
+- Custom animation controls for the refresh view
+- don't trigger refresh until drag is released
+- expose the background padding view for customization

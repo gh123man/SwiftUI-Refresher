@@ -15,7 +15,7 @@ func normalize(from min: CGFloat, to max: CGFloat, by val: CGFloat) -> CGFloat {
 
 public struct RefreshControlView<RefreshView: View>: View {
     @State var clipThresh: CGFloat = 0.5
-    @State var stopPoint: CGFloat = -25
+    @State var stopPoint: CGFloat = -50
     @State var offScreenPoint: CGFloat = -300
     @State var refreshHoldPoint: CGFloat = 0
     @State var pullClipPoint: CGFloat = 0.2
@@ -60,7 +60,6 @@ public struct RefreshControlView<RefreshView: View>: View {
             GeometryReader { geometry in
                 if headerInset != nil {
                     refreshView()
-                    .clipShape(Circle())
                         .frame(maxWidth: .infinity)
                         .offset(y: offset(geometry.frame(in: .global).minY - (headerInset ?? 0)))
                 }
@@ -113,7 +112,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         GeometryReader { globalGeometry in
             ScrollView {
                 ZStack(alignment: .top) {
-                    VStack {
+                    VStack(spacing: 0) {
                         if isRefreshing && !overlay {
                             Color.clear
                                 .frame(height: headerShimMaxHeight * (1 - percent))
