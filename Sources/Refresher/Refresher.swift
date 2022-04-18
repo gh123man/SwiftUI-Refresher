@@ -95,11 +95,11 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
         switch state {
         case .notRefreshing:
-            return AnyView(Color.red.frame(height: 0))
+            return AnyView(Color.clear.frame(height: 0))
         case .pulling:
-            return AnyView(Color.red.frame(height: 0))
+            return AnyView(Color.clear.frame(height: 0))
         case .refreshing:
-            return AnyView(Color.red.frame(height: headerShimMaxHeight * (1 - normalize(from: 0, to: refreshAt, by: distance))))
+            return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - normalize(from: 0, to: refreshAt, by: distance))))
         }
     }
     
