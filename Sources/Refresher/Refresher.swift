@@ -4,6 +4,8 @@ import Foundation
 import SwiftUI
 import UIKit
 
+public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
+
 func lerp(from: CGFloat, to: CGFloat, by: CGFloat) -> CGFloat {
     return from * (1 - by) + to * by
 }
@@ -14,47 +16,28 @@ func normalize(from min: CGFloat, to max: CGFloat, by val: CGFloat) -> CGFloat {
 }
 
 public struct RefreshControlView<RefreshView: View>: View {
-    @State var clipThresh: CGFloat = 0.5
-    @State var stopPoint: CGFloat = -50
+    @Binding var state: RefreshState
+    
     @State var offScreenPoint: CGFloat = -300
-    @State var refreshHoldPoint: CGFloat = 0
+    var stopPoint: CGFloat
+    var refreshHoldPoint: CGFloat
     @State var pullClipPoint: CGFloat = 0.2
     
-    @Binding var isRefreshing: Bool
-    @Binding var percent: CGFloat
     @State var innerHeight: CGFloat = 0
     @Binding var headerInset: CGFloat
-    @State var allowRefresh = true
     
-    @State private var refreshAt: CGFloat = 120
-    
-    var onRefresh: (@escaping () -> ()) -> ()
+    @Binding var refreshAt: CGFloat
     
     var refreshView: () -> RefreshView
     
     func offset(_ y: CGFloat) -> CGFloat {
         let percent = normalize(from: 0, to: refreshAt, by: y)
-        if isRefreshing {
+        if case .refreshing = state {
             return lerp(from: refreshHoldPoint, to: stopPoint, by: percent)
         }
         return lerp(from: offScreenPoint, to: stopPoint, by: normalize(from: pullClipPoint, to: 1, by: percent))
     }
     
-    func refresh() {
-        guard !isRefreshing, allowRefresh else {
-            return
-        }
-        allowRefresh = false
-        isRefreshing = true
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        onRefresh {
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-                withAnimation  {
-                    isRefreshing = false
-                }
-            }
-        }
-    }
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeometryReader { geometry in
@@ -62,73 +45,135 @@ public struct RefreshControlView<RefreshView: View>: View {
                 if !headerInset.isNaN {
                     refreshView()
                         .frame(maxWidth: .infinity)
-                        .offset(y: offset(geometry.frame(in: .global).minY - headerInset))
+                        .position(x: geometry.size.width / 2, y: offset(geometry.frame(in: .global).minY - headerInset))
                 }
-                Spacer(minLength: 0)
-                    .onChange(of: geometry.frame(in: .global).minY) { value in
-                        let percent = normalize(from: 0, to: refreshAt, by: value - headerInset)
-                        DispatchQueue.main.async {
-                            self.percent = percent
-                        }
-                        if percent >= 1 {
-                            refresh()
-                        }
-                        if percent <= 0.1 {
-                            allowRefresh = true
-                        }
-                    }
             }
-            
         }
     }
 }
 
+enum RefreshState {
+    case notRefreshing
+    case pulling
+    case refreshing
+}
 
 public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
-    @State private var percent: CGFloat = 0
-    @State private var headerShimMaxHeight: CGFloat = 50
-    @State private var isRefreshing = false
-    @State private var headerInset: CGFloat = .nan
-    
-    @State var overlay = false
-    var content: () -> Content
+    let axes: Axis.Set
+    let showsIndicators: Bool
+    let content: Content
+    let refreshAction: RefreshAction
     var refreshView: () -> RefreshView
-    var onRefresh: (@escaping () -> ()) -> ()
     
-    public init(overlay: Bool = false,
-                refreshView: @escaping () -> RefreshView,
-                onRefresh: @escaping (@escaping () -> ()) -> (),
-                @ViewBuilder _ content: @escaping () -> Content) {
-        self.overlay = overlay
-        self.onRefresh = onRefresh
+    @State private var headerShimMaxHeight: CGFloat = 50
+    @State private var headerInset: CGFloat = .nan
+    @State var state: RefreshState = .notRefreshing
+    @State var refreshAt: CGFloat = 120
+    @State var spinnerStopPoint: CGFloat = -25
+    @State var distance: CGFloat = 0
+    var overlay: Bool
+    
+    init(
+        axes: Axis.Set = .vertical,
+        showsIndicators: Bool = true,
+        refreshAction: @escaping RefreshAction,
+        overlay: Bool,
+        refreshView: @escaping () -> RefreshView,
+        content: Content
+    ) {
+        self.axes = axes
+        self.showsIndicators = showsIndicators
+        self.refreshAction = refreshAction
         self.refreshView = refreshView
         self.content = content
+        self.overlay = overlay
+    }
+    
+    private var refreshBanner: AnyView? {
+        if overlay {
+            return nil
+        }
+        switch state {
+        case .notRefreshing:
+            return AnyView(Color.red.frame(height: 0))
+        case .pulling:
+            return AnyView(Color.red.frame(height: 0))
+        case .refreshing:
+            return AnyView(Color.red.frame(height: headerShimMaxHeight * (1 - normalize(from: 0, to: refreshAt, by: distance))))
+        }
     }
     
     public var body: some View {
         GeometryReader { globalGeometry in
-            ScrollView {
+            ScrollView(axes, showsIndicators: showsIndicators) {
                 ZStack(alignment: .top) {
-                    VStack(spacing: 0) {
-                        if isRefreshing && !overlay {
-                            Color.clear
-                                .frame(height: headerShimMaxHeight * (1 - percent))
+                    
+                    // invisible view measures the top of the scrollview and edge insets
+                    GeometryReader { geometry in
+                        Color.clear.onChange(of: geometry.frame(in: .named("scrollView")).origin) { val in
+                            offsetChanged(val)
                         }
-                        content()
+                    }.frame(width: 0, height: 0)
+                    
+                    // Content wrapper with refresh banner
+                    VStack(spacing: 0) {
+                        refreshBanner
+                        content
                     }
-                    RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, headerInset: $headerInset, onRefresh: onRefresh, refreshView: refreshView)
-                }
-                .onChange(of: globalGeometry.frame(in: .global).minY) { val in
-                    headerInset = val
+                    
+                    // Refresh control - zero height, overlays all content
+                    RefreshControlView(state: $state,
+                                       stopPoint: spinnerStopPoint,
+                                       refreshHoldPoint: headerShimMaxHeight / 2,
+                                       headerInset: $headerInset,
+                                       refreshAt: $refreshAt,
+                                       refreshView: refreshView)
                 }
             }
+            .coordinateSpace(name: "scrollView")
+            .onChange(of: globalGeometry.frame(in: .global).minY) { val in
+                headerInset = val
+            }
+        }
+    }
+    
+    private func offsetChanged(_ newOffset: CGPoint) {
+        distance = newOffset.y
+        if case .refreshing = state { return }
+
+        guard newOffset.y > 0 else {
+            state = .notRefreshing
+            return
+        }
+
+        if newOffset.y >= refreshAt {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            state = .refreshing
+
+            refreshAction {
+                DispatchQueue.main.async {
+                    withAnimation {
+                        state = .notRefreshing
+                    }
+                }
+            }
+
+        } else if newOffset.y > 0 {
+            state = .pulling
         }
     }
 }
 
-extension RefreshableScrollView where RefreshView == DefaultRefreshView {
-    public init(overlay: Bool = false, onRefresh: @escaping (@escaping () -> ()) -> (), @ViewBuilder _ content: @escaping () -> Content) {
-        self.init(overlay: overlay, refreshView: DefaultRefreshView.init, onRefresh: onRefresh, content)
+
+extension ScrollView {
+    public func refresher(overlay: Bool = false, action: @escaping RefreshAction) -> some View {
+        RefreshableScrollView(axes: axes,
+                              showsIndicators: showsIndicators,
+                              refreshAction: action,
+                              overlay: overlay,
+                              refreshView: DefaultRefreshView.init,
+                              content: content)
     }
 }
+
 #endif
