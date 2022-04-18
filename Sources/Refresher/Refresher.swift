@@ -118,12 +118,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     }
                     RefreshControlView(isRefreshing: $isRefreshing, percent: $percent, headerInset: $headerInset, onRefresh: onRefresh, refreshView: refreshView)
                 }
-                .onAppear {
-                    // For some `globalGeometry.frame(in: .global).minY` is 0 when onAppear is called.
-                    // Put it on the next event loop run and it is correctly updated.
-                    DispatchQueue.main.async {
-                        headerInset = globalGeometry.safeAreaInsets.top
-                    }
+                .onChange(of: globalGeometry.frame(in: .global).minY) { val in
+                    headerInset = val
                 }
             }
         }
