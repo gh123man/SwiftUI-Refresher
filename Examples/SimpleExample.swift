@@ -1,3 +1,4 @@
+
 import SwiftUI
 import Refresher
 
@@ -6,12 +7,7 @@ struct ContentView: View {
     @State var refreshed = 0
     var body: some View {
         NavigationView {
-            RefreshableScrollView(onRefresh: { done in
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                    refreshed += 1
-                    done()
-                }
-            }) {
+            ScrollView {
                 VStack {
                     Text("Hello, world!")
                     Text("Refreshed: \(refreshed)")
@@ -30,6 +26,15 @@ struct ContentView: View {
                     Text("Go to details custom")
                         .padding()
                 }
+                ForEach((1...200), id: \.self) { _ in
+                    Text("asdf")
+                }
+            }
+            .refresher { done in
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                    refreshed += 1
+                    done()
+                }
             }
             .navigationTitle("test")
         }
@@ -39,18 +44,19 @@ struct ContentView: View {
 struct DetailsView: View {
     @State var refreshed = 0
     var body: some View {
-        RefreshableScrollView(onRefresh: { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                refreshed += 1
-                done()
-            }
-        }) {
+        ScrollView {
             VStack {
                 Image("photo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                 Text("Details!")
                 Text("Refreshed: \(refreshed)")
+            }
+        }
+        .refresher { done in
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                refreshed += 1
+                done()
             }
         }
         .navigationBarTitle("", displayMode: .inline)
@@ -60,12 +66,7 @@ struct DetailsView: View {
 struct DetailsOverlayView: View {
     @State var refreshed = 0
     var body: some View {
-        RefreshableScrollView(overlay: true, onRefresh: { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                refreshed += 1
-                done()
-            }
-        }) {
+        ScrollView {
             VStack {
                 GeometryReader { geometry in
                     Image("photo")
@@ -80,6 +81,12 @@ struct DetailsOverlayView: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
+        .refresher(overlay: true) { done in
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                refreshed += 1
+                done()
+            }
+        }
         .navigationBarTitle("", displayMode: .inline)
     }
 }
@@ -87,14 +94,7 @@ struct DetailsOverlayView: View {
 struct DetailsCustom: View {
     @State var refreshed = 0
     var body: some View {
-        RefreshableScrollView(refreshView: {
-            Text("Refreshing...")
-        }, onRefresh: { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                refreshed += 1
-                done()
-            }
-        } ) {
+        ScrollView {
             VStack {
                 Image("photo")
                     .resizable()
@@ -103,9 +103,17 @@ struct DetailsCustom: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
+        .refresher(refreshView: { Text("😂") }) { done in
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                refreshed += 1
+                done()
+            }
+        }
         .navigationBarTitle("", displayMode: .inline)
     }
 }
+
+
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {

@@ -135,6 +135,11 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             .onChange(of: globalGeometry.frame(in: .global).minY) { val in
                 headerInset = val
             }
+            .onAppear {
+                DispatchQueue.main.async {
+                    headerInset = globalGeometry.frame(in: .global).minY
+                }
+            }
         }
     }
     
@@ -157,7 +162,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             canRefresh = false
 
             refreshAction {
-                DispatchQueue.main.async {
+                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
                     withAnimation {
                         state = .notRefreshing
                     }
@@ -172,6 +177,17 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
 
 
 extension ScrollView {
+    public func refresher<RefreshView>(overlay: Bool = false, refreshView: @escaping () -> RefreshView, action: @escaping RefreshAction) -> RefreshableScrollView<Content, RefreshView> {
+        RefreshableScrollView(axes: axes,
+                              showsIndicators: showsIndicators,
+                              refreshAction: action,
+                              overlay: overlay,
+                              refreshView: refreshView,
+                              content: content)
+    }
+}
+
+extension ScrollView {
     public func refresher(overlay: Bool = false, action: @escaping RefreshAction) -> some View {
         RefreshableScrollView(axes: axes,
                               showsIndicators: showsIndicators,
@@ -181,5 +197,4 @@ extension ScrollView {
                               content: content)
     }
 }
-
 #endif

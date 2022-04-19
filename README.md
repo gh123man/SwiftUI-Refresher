@@ -12,22 +12,17 @@ A native Swift UI refresh control for iOS 14+
 
 `RefreshableScrollView` wraps a `ScrollView`
 ```swift
-struct MyView: View {
+struct DetailsView: View {
     @State var refreshed = 0
     var body: some View {
-        RefreshableScrollView(onRefresh: { done in 
-            // Do som expensive task
+        ScrollView {
+            Text("Details!")
+            Text("Refreshed: \(refreshed)")
+        }
+        .refresher { done in
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
                 refreshed += 1
-                done() // Done refreshing
-            }
-        }) {
-            VStack {
-                Image("photo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                Text("Details!")
-                Text("Refreshed: \(refreshed)")
+                done()
             }
         }
     }
@@ -45,14 +40,14 @@ See: [Examples](/Examples/SimpleExample.swift) for source for gifs below.
 
 ### Detail view (no overlay)
 
-`RefreshableScrollView(overlay: false)` (false is the default)
+`.refresher(overlay: false)` (false is the default)
 
 ![no-overlay](/images/details1.gif)
 
 
 ### Detail view with overlay
 
-`RefreshableScrollView(overlay: true)`
+`.refresher(overlay: true)`
 
 ![overlay](/images/details2.gif) 
 
@@ -61,10 +56,7 @@ See: [Examples](/Examples/SimpleExample.swift) for source for gifs below.
 Use a custom refresh view
 
 ```swift
- RefreshableScrollView(refreshView: {
-            Text("Refreshing...")
-        }, onRefresh: { done in
-            ...
+.refresher(refreshView: { Text("😂") }) { done in ...
 ```
 
 ![advanced](/images/advanced.gif)
