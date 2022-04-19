@@ -46,7 +46,8 @@ public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
                 refreshView
                     .frame(maxWidth: .infinity)
                     .position(x: geometry.size.width / 2, y: -position + refreshHoldPoint)
-                    .opacity(state.mode == .refreshing ? 1 : normalize(from: opacityClipPoint, to: 1, by: state.dragPosition))
+                    .opacity(state.modeAnimated == .refreshing ? 1 : normalize(from: opacityClipPoint, to: 1, by: state.dragPosition))
+                    .animation(.easeInOut(duration: 0.2), value: state.modeAnimated == .notRefreshing)
             }
         }
     }

@@ -68,23 +68,19 @@ Refresher can take a custom spinner view. Your custom view will get a binding in
 ```swift
 public struct EmojiRefreshView: View {
     @Binding var state: RefresherState
-    @State var angle: Double = 0.0
-    @State var isAnimating = false
+    @State private var angle: Double = 0.0
+    @State private var isAnimating = false
     
     var foreverAnimation: Animation {
         Animation.linear(duration: 1.0)
             .repeatForever(autoreverses: false)
     }
     
-    public init(state: Binding<RefresherState>) {
-        self._state = state
-    }
-    
     public var body: some View {
         VStack {
             switch state.mode {
             case .notRefreshing:
-                Text("😂")
+                Text("🤪")
                     .onAppear {
                         isAnimating = false
                     }

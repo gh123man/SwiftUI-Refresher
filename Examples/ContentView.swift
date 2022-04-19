@@ -49,14 +49,14 @@ struct ContentView: View {
 struct DetailsView: View {
     @State var refreshed = 0
     var style: Style
-    var useImage = true
+    @State var useImage = true
     var body: some View {
         ScrollView {
             VStack {
                 if useImage {
                     Image("photo")
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
                 }
                 Text("Details!")
                 Text("Refreshed: \(refreshed)")
@@ -113,7 +113,7 @@ struct DetailsCustom: View {
             }
         }
         .refresher(refreshView: EmojiRefreshView.init ) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1500)) {
                 refreshed += 1
                 done()
             }
@@ -124,23 +124,19 @@ struct DetailsCustom: View {
 
 public struct EmojiRefreshView: View {
     @Binding var state: RefresherState
-    @State var angle: Double = 0.0
-    @State var isAnimating = false
+    @State private var angle: Double = 0.0
+    @State private var isAnimating = false
     
     var foreverAnimation: Animation {
         Animation.linear(duration: 1.0)
             .repeatForever(autoreverses: false)
     }
     
-    public init(state: Binding<RefresherState>) {
-        self._state = state
-    }
-    
     public var body: some View {
         VStack {
             switch state.mode {
             case .notRefreshing:
-                Text("😂")
+                Text("🤪")
                     .onAppear {
                         isAnimating = false
                     }

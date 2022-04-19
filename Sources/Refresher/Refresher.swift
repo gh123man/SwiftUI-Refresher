@@ -4,8 +4,14 @@ import SwiftUI
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 
 public enum Style {
+    
+    /// Spinner pulls down and centers on a padding view above the scrollview
     case `default`
+    
+    /// Mimic the system refresh controller as close as possible
     case system
+    
+    /// Overlay the spinner onto the cotained view - good for static images
     case overlay
 }
 
@@ -16,8 +22,17 @@ public enum RefreshMode {
 }
 
 public struct RefresherState {
+    
+    /// Updated without animation - NOTE: Both modes are always updated in sequence (this one is first)
     public var mode: RefreshMode = .notRefreshing
+    
+    /// Updated with animation (this one is second)
+    public var modeAnimated: RefreshMode = .notRefreshing
+    
+    /// Value from 0 - 1. 0 is resting state, 1 is refresh trigger point - use this value for custom translations
     public var dragPosition: CGFloat = 0
+    
+    /// the configuration style - useful if you want your custom spinner to change behavior based on the style
     public var style: Style = .default
 }
 
@@ -57,7 +72,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     private var refreshBanner: AnyView? {
         switch state.style {
         case .default, .system:
-            if case .refreshing = state.mode {
+            if case .refreshing = state.modeAnimated {
                 return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - state.dragPosition)))
             }
         case .overlay:
@@ -69,7 +84,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     
     private var refershSpinner: AnyView? {
         return state.style == .default || state.style == .overlay
-            ? AnyView(RefreshSpinnerView(mode: state.mode,
+            ? AnyView(RefreshSpinnerView(mode: state.modeAnimated,
                                          stopPoint: spinnerStopPoint,
                                          refreshHoldPoint: headerShimMaxHeight / 2,
                                          refreshView: refreshView($state),
@@ -134,25 +149,30 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if !canRefresh { return }
 
         guard distance > 0 else {
-            state.mode = .notRefreshing
+            set(mode: .notRefreshing)
             return
         }
 
         if distance >= refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            state.mode = .refreshing
+            set(mode: .refreshing)
             canRefresh = false
 
             refreshAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-                    withAnimation {
-                        state.mode = .notRefreshing
-                    }
+                    set(mode: .notRefreshing)
                 }
             }
 
         } else if distance > 0 {
-            state.mode = .pulling
+            set(mode: .pulling)
+        }
+    }
+    
+    func set(mode: RefreshMode) {
+        state.mode = mode
+        withAnimation {
+            state.modeAnimated = mode
         }
     }
 }
