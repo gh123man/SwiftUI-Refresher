@@ -30,6 +30,10 @@ struct ContentView: View {
                     Text("Go to details with system style")
                         .padding()
                 }
+                NavigationLink(destination: DetailsView(style: .system, useImage: false)) {
+                    Text("Go to details with system style - no image")
+                        .padding()
+                }
                 ForEach((1...200), id: \.self) { _ in
                     Text("Some test text")
                 }
@@ -47,13 +51,16 @@ struct ContentView: View {
 
 struct DetailsView: View {
     @State var refreshed = 0
-    @State var style: Style
+    var style: Style
+    var useImage = true
     var body: some View {
         ScrollView {
             VStack {
-                Image("photo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
+                if useImage {
+                    Image("photo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                }
                 Text("Details!")
                 Text("Refreshed: \(refreshed)")
             }

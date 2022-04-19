@@ -17,6 +17,8 @@ public enum Style {
     case system
     case overlay
 }
+
+
 public enum RefreshMode {
     case notRefreshing
     case pulling
@@ -26,21 +28,24 @@ public enum RefreshMode {
 public struct RefresherState {
     public var mode: RefreshMode = .notRefreshing
     public var dragPosition: CGFloat = 0
+    public var style: Style = .default
 }
 
 public struct RefreshSpinnerView<RefreshView: View>: View {
-    @Binding var state: RefreshMode
-    @State var offScreenPoint: CGFloat = -300
+    var offScreenPoint: CGFloat = -300
+    var pullClipPoint: CGFloat = 0.2
+    
+    var mode: RefreshMode
     var stopPoint: CGFloat
     var refreshHoldPoint: CGFloat
-    @State var pullClipPoint: CGFloat = 0.2
+    var refreshView: RefreshView
+    
     @Binding var headerInset: CGFloat
     @Binding var refreshAt: CGFloat
-    var refreshView: RefreshView
     
     func offset(_ y: CGFloat) -> CGFloat {
         let percent = normalize(from: 0, to: refreshAt, by: y)
-        if case .refreshing = state {
+        if case .refreshing = mode {
             return lerp(from: refreshHoldPoint, to: stopPoint, by: percent)
         }
         return lerp(from: offScreenPoint, to: stopPoint, by: normalize(from: pullClipPoint, to: 1, by: percent))
@@ -61,7 +66,11 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
 }
 
 public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
+    var opacityClipPoint: CGFloat = 0.2
+    
+    var state: RefresherState
     var position: CGFloat
+    var refreshHoldPoint: CGFloat
     var refreshView: RefreshView
     
     public var body: some View {
@@ -69,7 +78,8 @@ public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
             GeometryReader { geometry in
                 refreshView
                     .frame(maxWidth: .infinity)
-                    .offset(y: -position)
+                    .position(x: geometry.size.width / 2, y: -position + refreshHoldPoint)
+                    .opacity(state.mode == .refreshing ? 1 : normalize(from: opacityClipPoint, to: 1, by: state.dragPosition))
             }
         }
     }
@@ -82,14 +92,14 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     let refreshAction: RefreshAction
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
-    @State private var headerShimMaxHeight: CGFloat = 50
+    @State private var headerShimMaxHeight: CGFloat = 75
     @State private var headerInset: CGFloat = .nan
     @State var state: RefresherState = RefresherState()
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
     @State var distance: CGFloat = 0
     @State var canRefresh = true
-    var style: Style
+    private var style: Style
     
     init(
         axes: Axis.Set = .vertical,
@@ -108,7 +118,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private var refreshBanner: AnyView? {
-        switch style {
+        switch state.style {
         case .default, .system:
             if case .refreshing = state.mode {
                 return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - state.dragPosition)))
@@ -121,28 +131,23 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private var refershSpinner: AnyView? {
-        switch style {
-        case .default, .overlay:
-            return AnyView(RefreshSpinnerView(state: $state.mode,
-                                      stopPoint: spinnerStopPoint,
-                                      refreshHoldPoint: headerShimMaxHeight / 2,
-                                      headerInset: $headerInset,
-                                      refreshAt: $refreshAt,
-                                      refreshView: refreshView($state)))
-        default:
-            return nil
-        }
+        return state.style == .default || state.style == .overlay
+            ? AnyView(RefreshSpinnerView(mode: state.mode,
+                                         stopPoint: spinnerStopPoint,
+                                         refreshHoldPoint: headerShimMaxHeight / 2,
+                                         refreshView: refreshView($state),
+                                         headerInset: $headerInset,
+                                         refreshAt: $refreshAt))
+            : nil
     }
     
-    private var systemRefershSpinner: AnyView? {
-        switch style {
-        case .system:
-            return AnyView(SystemStyleRefreshSpinner(position: distance,
-                                                     refreshView: refreshView($state)))
-        default:
-            return nil
-        }
-        
+    private var systemStylerefreshSpinner: AnyView? {
+        return state.style == .system
+            ? AnyView(SystemStyleRefreshSpinner(state: state,
+                                                position: distance,
+                                                refreshHoldPoint: headerShimMaxHeight / 2,
+                                                refreshView: refreshView($state)))
+            : nil
     }
     
     public var body: some View {
@@ -155,14 +160,16 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         Color.clear.onChange(of: geometry.frame(in: .named("scrollView")).origin) { val in
                             offsetChanged(val)
                         }
-                    }.frame(width: 0, height: 0)
+                    }
                     
-                    systemRefershSpinner
+                    systemStylerefreshSpinner
+                    
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
                         refreshBanner
                         content
                     }
+                    // renders over content
                     refershSpinner
                 }
             }
@@ -171,6 +178,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 headerInset = val
             }
             .onAppear {
+                state.style = style
                 DispatchQueue.main.async {
                     headerInset = globalGeometry.frame(in: .global).minY
                 }
