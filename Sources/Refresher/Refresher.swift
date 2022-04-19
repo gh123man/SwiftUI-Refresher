@@ -34,7 +34,6 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
     var stopPoint: CGFloat
     var refreshHoldPoint: CGFloat
     @State var pullClipPoint: CGFloat = 0.2
-    @State var innerHeight: CGFloat = 0
     @Binding var headerInset: CGFloat
     @Binding var refreshAt: CGFloat
     var refreshView: RefreshView
@@ -62,30 +61,15 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
 }
 
 public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
-    @Binding var state: RefreshMode
-    @State var offScreenPoint: CGFloat = -300
-    var stopPoint: CGFloat
-    var refreshHoldPoint: CGFloat
-    @State var pullClipPoint: CGFloat = 0.2
-    @State var innerHeight: CGFloat = 0
-    @Binding var headerInset: CGFloat
-    @Binding var refreshAt: CGFloat
+    var position: CGFloat
     var refreshView: RefreshView
-    
-    func offset(_ y: CGFloat) -> CGFloat {
-        let percent = normalize(from: 0, to: refreshAt, by: y)
-        if case .refreshing = state {
-            return lerp(from: refreshHoldPoint, to: stopPoint, by: percent)
-        }
-        return lerp(from: offScreenPoint, to: stopPoint, by: normalize(from: pullClipPoint, to: 1, by: percent))
-    }
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeometryReader { geometry in
                 refreshView
                     .frame(maxWidth: .infinity)
-                    .position(x: geometry.size.width / 2, y: geometry.size.height)
+                    .offset(y: -position)
             }
         }
     }
@@ -124,7 +108,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private var refreshBanner: AnyView? {
-        
         switch style {
         case .default, .system:
             if case .refreshing = state.mode {
@@ -135,6 +118,31 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
         
         return AnyView(Color.clear.frame(height: 0))
+    }
+    
+    private var refershSpinner: AnyView? {
+        switch style {
+        case .default, .overlay:
+            return AnyView(RefreshSpinnerView(state: $state.mode,
+                                      stopPoint: spinnerStopPoint,
+                                      refreshHoldPoint: headerShimMaxHeight / 2,
+                                      headerInset: $headerInset,
+                                      refreshAt: $refreshAt,
+                                      refreshView: refreshView($state)))
+        default:
+            return nil
+        }
+    }
+    
+    private var systemRefershSpinner: AnyView? {
+        switch style {
+        case .system:
+            return AnyView(SystemStyleRefreshSpinner(position: distance,
+                                                     refreshView: refreshView($state)))
+        default:
+            return nil
+        }
+        
     }
     
     public var body: some View {
@@ -149,20 +157,13 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         }
                     }.frame(width: 0, height: 0)
                     
+                    systemRefershSpinner
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
                         refreshBanner
                         content
                     }
-                     
-                    // Refresh control - zero height, overlays all content
-                    RefreshSpinnerView(state: $state.mode,
-                                       stopPoint: spinnerStopPoint,
-                                       refreshHoldPoint: headerShimMaxHeight / 2,
-                                       headerInset: $headerInset,
-                                       refreshAt: $refreshAt,
-                                       refreshView: refreshView($state))
-                    
+                    refershSpinner
                 }
             }
             .coordinateSpace(name: "scrollView")
