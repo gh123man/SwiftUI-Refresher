@@ -1,8 +1,5 @@
-#if canImport(UIKit)
-
 import Foundation
 import SwiftUI
-import UIKit
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 
@@ -15,20 +12,32 @@ func normalize(from min: CGFloat, to max: CGFloat, by val: CGFloat) -> CGFloat {
     return v < 0 ? 0 : v > 1 ? 1 : v
 }
 
-public struct RefreshControlView<RefreshView: View>: View {
-    @Binding var state: RefreshState
-    
+public enum Style {
+    case `default`
+    case system
+    case overlay
+}
+public enum RefreshMode {
+    case notRefreshing
+    case pulling
+    case refreshing
+}
+
+public struct RefresherState {
+    public var mode: RefreshMode = .notRefreshing
+    public var dragPosition: CGFloat = 0
+}
+
+public struct RefreshSpinnerView<RefreshView: View>: View {
+    @Binding var state: RefreshMode
     @State var offScreenPoint: CGFloat = -300
     var stopPoint: CGFloat
     var refreshHoldPoint: CGFloat
     @State var pullClipPoint: CGFloat = 0.2
-    
     @State var innerHeight: CGFloat = 0
     @Binding var headerInset: CGFloat
-    
     @Binding var refreshAt: CGFloat
-    
-    var refreshView: () -> RefreshView
+    var refreshView: RefreshView
     
     func offset(_ y: CGFloat) -> CGFloat {
         let percent = normalize(from: 0, to: refreshAt, by: y)
@@ -43,7 +52,7 @@ public struct RefreshControlView<RefreshView: View>: View {
             GeometryReader { geometry in
                 // Nan by default. Don't show the spinner until we have a header inset.
                 if !headerInset.isNaN {
-                    refreshView()
+                    refreshView
                         .frame(maxWidth: .infinity)
                         .position(x: geometry.size.width / 2, y: offset(geometry.frame(in: .global).minY - headerInset))
                 }
@@ -52,10 +61,34 @@ public struct RefreshControlView<RefreshView: View>: View {
     }
 }
 
-enum RefreshState {
-    case notRefreshing
-    case pulling
-    case refreshing
+public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
+    @Binding var state: RefreshMode
+    @State var offScreenPoint: CGFloat = -300
+    var stopPoint: CGFloat
+    var refreshHoldPoint: CGFloat
+    @State var pullClipPoint: CGFloat = 0.2
+    @State var innerHeight: CGFloat = 0
+    @Binding var headerInset: CGFloat
+    @Binding var refreshAt: CGFloat
+    var refreshView: RefreshView
+    
+    func offset(_ y: CGFloat) -> CGFloat {
+        let percent = normalize(from: 0, to: refreshAt, by: y)
+        if case .refreshing = state {
+            return lerp(from: refreshHoldPoint, to: stopPoint, by: percent)
+        }
+        return lerp(from: offScreenPoint, to: stopPoint, by: normalize(from: pullClipPoint, to: 1, by: percent))
+    }
+    
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geometry in
+                refreshView
+                    .frame(maxWidth: .infinity)
+                    .position(x: geometry.size.width / 2, y: geometry.size.height)
+            }
+        }
+    }
 }
 
 public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
@@ -63,23 +96,23 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     let showsIndicators: Bool
     let content: Content
     let refreshAction: RefreshAction
-    var refreshView: () -> RefreshView
+    var refreshView: (Binding<RefresherState>) -> RefreshView
     
     @State private var headerShimMaxHeight: CGFloat = 50
     @State private var headerInset: CGFloat = .nan
-    @State var state: RefreshState = .notRefreshing
+    @State var state: RefresherState = RefresherState()
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
     @State var distance: CGFloat = 0
     @State var canRefresh = true
-    var overlay: Bool
+    var style: Style
     
     init(
         axes: Axis.Set = .vertical,
         showsIndicators: Bool = true,
         refreshAction: @escaping RefreshAction,
-        overlay: Bool,
-        refreshView: @escaping () -> RefreshView,
+        style: Style,
+        refreshView: @escaping (Binding<RefresherState>) -> RefreshView,
         content: Content
     ) {
         self.axes = axes
@@ -87,21 +120,21 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         self.refreshAction = refreshAction
         self.refreshView = refreshView
         self.content = content
-        self.overlay = overlay
+        self.style = style
     }
     
     private var refreshBanner: AnyView? {
-        if overlay {
-            return nil
-        }
-        switch state {
-        case .notRefreshing:
+        
+        switch style {
+        case .default, .system:
+            if case .refreshing = state.mode {
+                return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - state.dragPosition)))
+            }
+        case .overlay:
             return AnyView(Color.clear.frame(height: 0))
-        case .pulling:
-            return AnyView(Color.clear.frame(height: 0))
-        case .refreshing:
-            return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - normalize(from: 0, to: refreshAt, by: distance))))
         }
+        
+        return AnyView(Color.clear.frame(height: 0))
     }
     
     public var body: some View {
@@ -121,14 +154,15 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         refreshBanner
                         content
                     }
-                    
+                     
                     // Refresh control - zero height, overlays all content
-                    RefreshControlView(state: $state,
+                    RefreshSpinnerView(state: $state.mode,
                                        stopPoint: spinnerStopPoint,
                                        refreshHoldPoint: headerShimMaxHeight / 2,
                                        headerInset: $headerInset,
                                        refreshAt: $refreshAt,
-                                       refreshView: refreshView)
+                                       refreshView: refreshView($state))
+                    
                 }
             }
             .coordinateSpace(name: "scrollView")
@@ -148,53 +182,31 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if distance < 1 {
             canRefresh = true
         }
-        if case .refreshing = state { return }
+        
+        state.dragPosition = normalize(from: 0, to: refreshAt, by: distance)
+        if case .refreshing = state.mode { return }
         if !canRefresh { return }
 
         guard newOffset.y > 0 else {
-            state = .notRefreshing
+            state.mode = .notRefreshing
             return
         }
 
         if newOffset.y >= refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            state = .refreshing
+            state.mode = .refreshing
             canRefresh = false
 
             refreshAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
                     withAnimation {
-                        state = .notRefreshing
+                        state.mode = .notRefreshing
                     }
                 }
             }
 
         } else if newOffset.y > 0 {
-            state = .pulling
+            state.mode = .pulling
         }
     }
 }
-
-
-extension ScrollView {
-    public func refresher<RefreshView>(overlay: Bool = false, refreshView: @escaping () -> RefreshView, action: @escaping RefreshAction) -> RefreshableScrollView<Content, RefreshView> {
-        RefreshableScrollView(axes: axes,
-                              showsIndicators: showsIndicators,
-                              refreshAction: action,
-                              overlay: overlay,
-                              refreshView: refreshView,
-                              content: content)
-    }
-}
-
-extension ScrollView {
-    public func refresher(overlay: Bool = false, action: @escaping RefreshAction) -> some View {
-        RefreshableScrollView(axes: axes,
-                              showsIndicators: showsIndicators,
-                              refreshAction: action,
-                              overlay: overlay,
-                              refreshView: DefaultRefreshView.init,
-                              content: content)
-    }
-}
-#endif

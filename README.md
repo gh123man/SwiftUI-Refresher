@@ -56,7 +56,7 @@ See: [Examples](/Examples/SimpleExample.swift) for source for gifs below.
 Use a custom refresh view
 
 ```swift
-.refresher(refreshView: { Text("😂") }) { done in ...
+.refresher(refreshView: { Text("Refreshing...") }) { done in ...
 ```
 
 ![advanced](/images/advanced.gif)
