@@ -18,24 +18,21 @@ struct ContentView: View {
                 }
                 
                 NavigationLink(destination: DetailsOverlayView()) {
-                    Text("Go to details with overlay")
+                    Text("Go to details in overlay mode")
                         .padding()
                 }
                     
                 NavigationLink(destination: DetailsCustom()) {
-                    Text("Go to details custom")
+                    Text("Go to details with a custom spinner")
                         .padding()
                 }
                 NavigationLink(destination: DetailsView(style: .system)) {
-                    Text("Go to details with system style")
+                    Text("Go to details with system style animation")
                         .padding()
                 }
                 NavigationLink(destination: DetailsView(style: .system, useImage: false)) {
                     Text("Go to details with system style - no image")
                         .padding()
-                }
-                ForEach((1...200), id: \.self) { _ in
-                    Text("Some test text")
                 }
             }
             .refresher { done in
@@ -44,7 +41,7 @@ struct ContentView: View {
                     done()
                 }
             }
-            .navigationTitle("test")
+            .navigationTitle("Refresher")
         }
     }
 }
@@ -94,7 +91,7 @@ struct DetailsOverlayView: View {
             }
         }
         .refresher(style: .overlay) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
                 refreshed += 1
                 done()
             }
@@ -115,7 +112,7 @@ struct DetailsCustom: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
-        .refresher(refreshView: { EmojiRefreshView(state: $0, emoji: "😂") }) { done in
+        .refresher(refreshView: EmojiRefreshView.init ) { done in
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
                 refreshed += 1
                 done()
@@ -127,15 +124,6 @@ struct DetailsCustom: View {
 
 public struct EmojiRefreshView: View {
     @Binding var state: RefresherState
-    private var emoji: String
-    
-    public init(state: Binding<RefresherState>, emoji: String) {
-        self._state = state
-        self.emoji = emoji
-    }
-    
-    @Environment(\.colorScheme) var colorScheme
-    
     @State var angle: Double = 0.0
     @State var isAnimating = false
     
@@ -144,19 +132,23 @@ public struct EmojiRefreshView: View {
             .repeatForever(autoreverses: false)
     }
     
+    public init(state: Binding<RefresherState>) {
+        self._state = state
+    }
+    
     public var body: some View {
         VStack {
             switch state.mode {
             case .notRefreshing:
-                Text(emoji)
+                Text("😂")
                     .onAppear {
                         isAnimating = false
                     }
             case .pulling:
-                Text(emoji)
+                Text("😯")
                     .rotationEffect(.degrees(360 * state.dragPosition))
             case .refreshing:
-                Text(emoji)
+                Text("😂")
                     .rotationEffect(.degrees(self.isAnimating ? 360.0 : 0.0))
                         .onAppear {
                             withAnimation(foreverAnimation) {

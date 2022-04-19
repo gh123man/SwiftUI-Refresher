@@ -1,28 +1,32 @@
 # Refresher
 
-A native Swift UI refresh control for iOS 14+
+A customizable, native Swift UI refresh control for iOS 14+
 
 ## Why?
 
 - the native SwiftUI refresh control only works on iOS 15+
 - the native UIKit refresh control works with ugly wrappers, but has buggy behavior with navigation views
 - I needed a refresh control that could accomodate an overlay (such as appearing on top of a static image)
+- This one is very customizable
 
 ## Usage 
+First add the package to your project. 
 
-`RefreshableScrollView` wraps a `ScrollView`
 ```swift
+import Refresher 
+
 struct DetailsView: View {
     @State var refreshed = 0
+
     var body: some View {
         ScrollView {
             Text("Details!")
             Text("Refreshed: \(refreshed)")
         }
-        .refresher { done in
+        .refresher { done in // Called when pulled to refresh
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
                 refreshed += 1
-                done()
+                done() // Stops the refresh view (can be called on a background thread)
             }
         }
     }
@@ -30,40 +34,89 @@ struct DetailsView: View {
 
 ```
 
-## Options
-
-See: [Examples](/Examples/SimpleExample.swift) for source for gifs below.
+See: [Examples](/Examples/) for a full sample project with multiple implementations
 
 ### Navigation view
-![nav](/images/nav.gif)
 
+![Navigation](/images/1.gif)
 
-### Detail view (no overlay)
+`Refresher` plays nice with both Navigation views and navigation subviews. 
 
-`.refresher(overlay: false)` (false is the default)
-
-![no-overlay](/images/details1.gif)
-
+![Subview](/images/3.gif)
 
 ### Detail view with overlay
 
+`Refresher` supports an overlay mode to show a refresh indicator over fixed position content
+
 `.refresher(overlay: true)`
 
-![overlay](/images/details2.gif) 
+![Overlay](/images/2.gif)
 
-## Advanced
-
-Use a custom refresh view
+### System style
+`Refresher`'s default animation is designed to be more flexible that the system animation style. If you want `Refresher` to behave more like they system refresh control, you can change the style:
 
 ```swift
-.refresher(refreshView: { Text("Refreshing...") }) { done in ...
+.refresher(style: .system) { done in
 ```
 
-![advanced](/images/advanced.gif)
+![System](/images/5.gif)
 
+## Customization
 
-TODO: 
+Refresher can take a custom spinner view. Your custom view will get a binding instances of the refresher state that contains useful properties for managing animations and translations. Here is a custom spinner that shows an emoji:
 
-- Custom animation controls for the refresh view
-- don't trigger refresh until drag is released
+```swift
+public struct EmojiRefreshView: View {
+    @Binding var state: RefresherState
+    @State var angle: Double = 0.0
+    @State var isAnimating = false
+    
+    var foreverAnimation: Animation {
+        Animation.linear(duration: 1.0)
+            .repeatForever(autoreverses: false)
+    }
+    
+    public init(state: Binding<RefresherState>) {
+        self._state = state
+    }
+    
+    public var body: some View {
+        VStack {
+            switch state.mode {
+            case .notRefreshing:
+                Text("😂")
+                    .onAppear {
+                        isAnimating = false
+                    }
+            case .pulling:
+                Text("😯")
+                    .rotationEffect(.degrees(360 * state.dragPosition))
+            case .refreshing:
+                Text("😂")
+                    .rotationEffect(.degrees(self.isAnimating ? 360.0 : 0.0))
+                        .onAppear {
+                            withAnimation(foreverAnimation) {
+                                isAnimating = true
+                            }
+                    }
+            }
+        }
+        .scaleEffect(2)
+    }
+}
+```
+
+Add the custom refresherView:
+```swift
+.refresher(refreshView: EmojiRefreshView.init ) { done in
+```
+
+![Custom](/images/4.gif)
+
+## Want to help?
+
+### Here are some TODO items
+
+- Support `ListView`
+- don't trigger refresh until drag is released (how do you detect `touchDown` in a scrollview?)
 - expose the background padding view for customization
