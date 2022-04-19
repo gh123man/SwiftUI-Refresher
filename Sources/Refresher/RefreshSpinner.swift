@@ -24,13 +24,10 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeometryReader { geometry in
-                // Nan by default. Don't show the spinner until we have a header inset.
-                if !headerInset.isNaN {
-                    refreshView
-                        .frame(maxWidth: .infinity)
-                        .position(x: geometry.size.width / 2, y: offset(geometry.frame(in: .global).minY - headerInset))
-                }
-            }
+                refreshView
+                    .frame(maxWidth: .infinity)
+                    .position(x: geometry.size.width / 2, y: offset(geometry.frame(in: .global).minY - headerInset))
+            }   
         }
     }
 }

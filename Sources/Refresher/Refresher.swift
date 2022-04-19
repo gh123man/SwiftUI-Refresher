@@ -30,7 +30,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
     @State private var headerShimMaxHeight: CGFloat = 75
-    @State private var headerInset: CGFloat = .nan
+    @State private var headerInset: CGFloat = 1000000 // Some valid - far off the screen value. 
     @State var state: RefresherState = RefresherState()
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
@@ -88,26 +88,26 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     public var body: some View {
+        // The ordering of views and operations here is very important - things break
+        // in very strange ways between iOS 14 and iOS 15.
         GeometryReader { globalGeometry in
             ScrollView(axes, showsIndicators: showsIndicators) {
-                ZStack(alignment: .top) {
-                    
-                    // invisible view measures the top of the scrollview and edge insets
-                    GeometryReader { geometry in
-                        Color.clear.onChange(of: geometry.frame(in: .named("scrollView")).origin) { val in
-                            offsetChanged(val)
+                GeometryReader { geometry in
+                    ZStack(alignment: .top) {
+                        systemStylerefreshSpinner
+                        
+                        // Content wrapper with refresh banner
+                        VStack(spacing: 0) {
+                            refreshBanner
+                            content
                         }
+                        // renders over content
+                        refershSpinner
                     }
-                    
-                    systemStylerefreshSpinner
-                    
-                    // Content wrapper with refresh banner
-                    VStack(spacing: 0) {
-                        refreshBanner
-                        content
+                    .onChange(of: geometry.frame(in: .global).origin) { val in
+                        distance = val.y - headerInset
+                        offsetChanged()
                     }
-                    // renders over content
-                    refershSpinner
                 }
             }
             .coordinateSpace(name: "scrollView")
@@ -123,8 +123,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
     }
     
-    private func offsetChanged(_ newOffset: CGPoint) {
-        distance = newOffset.y
+    private func offsetChanged() {
+        
         if distance < 1 {
             canRefresh = true
         }
@@ -133,12 +133,12 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if case .refreshing = state.mode { return }
         if !canRefresh { return }
 
-        guard newOffset.y > 0 else {
+        guard distance > 0 else {
             state.mode = .notRefreshing
             return
         }
 
-        if newOffset.y >= refreshAt {
+        if distance >= refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             state.mode = .refreshing
             canRefresh = false
@@ -151,7 +151,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 }
             }
 
-        } else if newOffset.y > 0 {
+        } else if distance > 0 {
             state.mode = .pulling
         }
     }
