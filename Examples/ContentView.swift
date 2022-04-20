@@ -34,6 +34,9 @@ struct ContentView: View {
                     Text("Go to details with system style - no image")
                         .padding()
                 }
+                ForEach((1...100), id: \.self) { _ in
+                    Text("asdf")
+                }
             }
             .refresher { done in
                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {

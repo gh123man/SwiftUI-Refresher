@@ -45,11 +45,12 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
     @State private var headerShimMaxHeight: CGFloat = 75
-    @State private var headerInset: CGFloat = 0
+    @State private var headerInset: CGFloat = 1000000 // Somewhere far off screen
     @State var state: RefresherState = RefresherState()
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
     @State var distance: CGFloat = 0
+    @State var rawDistance: CGFloat = 0
     @State var canRefresh = true
     private var style: Style
     
@@ -107,25 +108,23 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         // in very strange ways between iOS 14 and iOS 15.
         GeometryReader { globalGeometry in
             ScrollView(axes, showsIndicators: showsIndicators) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .top) {
-                        systemStylerefreshSpinner
-                        
-                        // Content wrapper with refresh banner
-                        VStack(spacing: 0) {
-                            refreshBanner
-                            content
-                        }
-                        // renders over content
-                        refershSpinner
+                ZStack(alignment: .top) {
+                    systemStylerefreshSpinner
+                    
+                    // Content wrapper with refresh banner
+                    VStack(spacing: 0) {
+                        refreshBanner
+                        content
                     }
-                    .onChange(of: geometry.frame(in: .global).origin) { val in
-                        DispatchQueue.main.async {
-                            distance = val.y - headerInset
-                            offsetChanged()
-                        }
-                    }
+                    // renders over content
+                    refershSpinner
+                    
+                    OffsetReader(offset: $rawDistance)
                 }
+            }
+            .onChange(of: rawDistance) { val in
+                distance = val - headerInset
+                offsetChanged()
             }
             .onChange(of: globalGeometry.frame(in: .global).minY) { val in
                 headerInset = val
