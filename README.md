@@ -2,6 +2,8 @@
 
 A customizable, native Swift UI refresh control for iOS 14+
 
+*NOTE: iOS 14 has some jankyness. The `.overlay` or `.system` style works best for iOS 14.* 
+
 ## Why?
 
 - the native SwiftUI refresh control only works on iOS 15+
