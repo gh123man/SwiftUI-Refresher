@@ -45,7 +45,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
     @State private var headerShimMaxHeight: CGFloat = 75
-    @State private var headerInset: CGFloat = 1000000 // Some valid - far off the screen value. 
+    @State private var headerInset: CGFloat = 0
     @State var state: RefresherState = RefresherState()
     @State var refreshAt: CGFloat = 120
     @State var spinnerStopPoint: CGFloat = -25
@@ -83,7 +83,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private var refershSpinner: AnyView? {
-        return state.style == .default || state.style == .overlay
+        return (state.style == .default || state.style == .overlay)
             ? AnyView(RefreshSpinnerView(mode: state.modeAnimated,
                                          stopPoint: spinnerStopPoint,
                                          refreshHoldPoint: headerShimMaxHeight / 2,
@@ -120,12 +120,13 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         refershSpinner
                     }
                     .onChange(of: geometry.frame(in: .global).origin) { val in
-                        distance = val.y - headerInset
-                        offsetChanged()
+                        DispatchQueue.main.async {
+                            distance = val.y - headerInset
+                            offsetChanged()
+                        }
                     }
                 }
             }
-            .coordinateSpace(name: "scrollView")
             .onChange(of: globalGeometry.frame(in: .global).minY) { val in
                 headerInset = val
             }
@@ -139,7 +140,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private func offsetChanged() {
-        
         if distance < 1 {
             canRefresh = true
         }
