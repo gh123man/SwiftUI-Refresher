@@ -8,7 +8,9 @@ struct OffsetReader: View {
             GeometryReader { geometry in
                 Spacer(minLength: 0)
                     .onChange(of: geometry.frame(in: .global).minY) { value in
-                        self.offset = value
+                        DispatchQueue.main.async {
+                            self.offset = value
+                        }
                     }
             }
         }
