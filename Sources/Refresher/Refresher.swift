@@ -70,17 +70,16 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         self.style = style
     }
     
-    private var refreshBanner: AnyView? {
+    private var refreshHeaderOffset: CGFloat {
         switch state.style {
         case .default, .system:
             if case .refreshing = state.modeAnimated {
-                return AnyView(Color.clear.frame(height: headerShimMaxHeight * (1 - state.dragPosition)))
+                return headerShimMaxHeight * (1 - state.dragPosition)
             }
-        case .overlay:
-            return AnyView(Color.clear.frame(height: 0))
+        default: break
         }
         
-        return AnyView(Color.clear.frame(height: 0))
+        return 0
     }
     
     private var refershSpinner: AnyView? {
@@ -113,8 +112,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
-                        refreshBanner
                         content
+                            .offset(y: refreshHeaderOffset)
                     }
                     // renders over content
                     refershSpinner
