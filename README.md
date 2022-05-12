@@ -9,6 +9,9 @@ A customizable, native Swift UI refresh control for iOS 14+
 - I needed a refresh control that could accomodate an overlay (such as appearing on top of a static image)
 - This one is very customizable
 
+## See it in action
+If you want to see it in a real app, check out [dateit](https://apps.apple.com/us/app/dateit/id1610780514)
+
 ## Usage 
 First add the package to your project. 
 
