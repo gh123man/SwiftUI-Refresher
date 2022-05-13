@@ -107,11 +107,11 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         // in very strange ways between iOS 14 and iOS 15.
         GeometryReader { globalGeometry in
             ScrollView(axes, showsIndicators: showsIndicators) {
-                OffsetReader { val in
-                    distance = val - headerInset
-                    offsetChanged()
-                }
                 ZStack(alignment: .top) {
+                    OffsetReader { val in
+                        distance = val - headerInset
+                        offsetChanged()
+                    }
                     systemStylerefreshSpinner
                     
                     // Content wrapper with refresh banner
