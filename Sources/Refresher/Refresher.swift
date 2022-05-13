@@ -82,24 +82,26 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         return 0
     }
     
-    private var refershSpinner: AnyView? {
-        return (state.style == .default || state.style == .overlay)
-            ? AnyView(RefreshSpinnerView(mode: state.modeAnimated,
-                                         stopPoint: spinnerStopPoint,
-                                         refreshHoldPoint: headerShimMaxHeight / 2,
-                                         refreshView: refreshView($state),
-                                         headerInset: $headerInset,
-                                         refreshAt: $refreshAt))
-            : nil
+    @ViewBuilder
+    private var refershSpinner: some View {
+        if (state.style == .default || state.style == .overlay) {
+             RefreshSpinnerView(mode: state.modeAnimated,
+                                stopPoint: spinnerStopPoint,
+                                refreshHoldPoint: headerShimMaxHeight / 2,
+                                refreshView: refreshView($state),
+                                headerInset: $headerInset,
+                                refreshAt: $refreshAt)
+        }
     }
     
-    private var systemStylerefreshSpinner: AnyView? {
-        return state.style == .system
-            ? AnyView(SystemStyleRefreshSpinner(state: state,
-                                                position: distance,
-                                                refreshHoldPoint: headerShimMaxHeight / 2,
-                                                refreshView: refreshView($state)))
-            : nil
+    @ViewBuilder
+    private var systemStylerefreshSpinner: some View {
+        if state.style == .system {
+            SystemStyleRefreshSpinner(state: state,
+                                      position: distance,
+                                      refreshHoldPoint: headerShimMaxHeight / 2,
+                                      refreshView: refreshView($state))
+        }
     }
     
     public var body: some View {
