@@ -2,16 +2,15 @@ import Foundation
 import SwiftUI
 
 public struct RefreshSpinnerView<RefreshView: View>: View {
-    var offScreenPoint: CGFloat = -300
-    var pullClipPoint: CGFloat = 0.2
-    
+    var offScreenPoint: CGFloat
+    var pullClipPoint: CGFloat
     var mode: RefreshMode
     var stopPoint: CGFloat
     var refreshHoldPoint: CGFloat
     var refreshView: RefreshView
     
     @Binding var headerInset: CGFloat
-    @Binding var refreshAt: CGFloat
+    var refreshAt: CGFloat
     
     func offset(_ y: CGFloat) -> CGFloat {
         let percent = normalize(from: 0, to: refreshAt, by: y)
@@ -33,7 +32,7 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
 }
 
 public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
-    var opacityClipPoint: CGFloat = 0.2
+    var opacityClipPoint: CGFloat
     
     var state: RefresherState
     var position: CGFloat

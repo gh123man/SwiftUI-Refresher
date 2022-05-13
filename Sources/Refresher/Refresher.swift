@@ -3,6 +3,42 @@ import SwiftUI
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 
+public struct Config {
+    /// Drag distance needed to trigger a refresh
+    public var refreshAt: CGFloat
+    
+    /// Max height of the spacer for the refresh spinner to sit while refreshing
+    public var headerShimMaxHeight: CGFloat
+    
+    /// Offset where the spinner stops moving after draging
+    public var defaultSpinnerSpinnerStopPoint: CGFloat
+    
+    /// Off screen start point for the spinner
+    public var defaultSpinnerOffScreenPoint: CGFloat
+    
+    /// How far you have to pull (from 0 - 1) for the spinner to start moving
+    public var defaultSpinnerPullClipPoint: CGFloat
+    
+    /// How far you have to pull (from 0 - 1) for the spinner to start becoming visible
+    public var systemSpinnerOpacityClipPoint: CGFloat
+    
+    public init(
+        refreshAt: CGFloat = 120,
+        headerShimMaxHeight: CGFloat = 75,
+        defaultSpinnerSpinnerStopPoint: CGFloat = -50,
+        defaultSpinnerOffScreenPoint: CGFloat = -300,
+        defaultSpinnerPullClipPoint: CGFloat = 0.2,
+        systemSpinnerOpacityClipPoint: CGFloat = 0.2
+    ) {
+        self.refreshAt = refreshAt
+        self.defaultSpinnerSpinnerStopPoint = defaultSpinnerSpinnerStopPoint
+        self.headerShimMaxHeight = headerShimMaxHeight
+        self.defaultSpinnerOffScreenPoint = defaultSpinnerOffScreenPoint
+        self.defaultSpinnerPullClipPoint = defaultSpinnerPullClipPoint
+        self.systemSpinnerOpacityClipPoint = systemSpinnerOpacityClipPoint
+    }
+}
+
 public enum Style {
     
     /// Spinner pulls down and centers on a padding view above the scrollview
@@ -44,21 +80,20 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     let refreshAction: RefreshAction
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
-    @State private var headerShimMaxHeight: CGFloat = 75
     @State private var headerInset: CGFloat = 1000000 // Somewhere far off screen
-    @State var state: RefresherState = RefresherState()
-    @State var refreshAt: CGFloat = 120
-    @State var spinnerStopPoint: CGFloat = -25
+    @State var state = RefresherState()
     @State var distance: CGFloat = 0
     @State var rawDistance: CGFloat = 0
     @State var canRefresh = true
     private var style: Style
+    private var config: Config
     
     init(
         axes: Axis.Set = .vertical,
         showsIndicators: Bool = true,
         refreshAction: @escaping RefreshAction,
         style: Style,
+        config: Config,
         refreshView: @escaping (Binding<RefresherState>) -> RefreshView,
         content: Content
     ) {
@@ -68,13 +103,14 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         self.refreshView = refreshView
         self.content = content
         self.style = style
+        self.config = config
     }
     
     private var refreshHeaderOffset: CGFloat {
         switch state.style {
         case .default, .system:
             if case .refreshing = state.modeAnimated {
-                return headerShimMaxHeight * (1 - state.dragPosition)
+                return config.headerShimMaxHeight * (1 - state.dragPosition)
             }
         default: break
         }
@@ -85,21 +121,24 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @ViewBuilder
     private var refershSpinner: some View {
         if (state.style == .default || state.style == .overlay) {
-             RefreshSpinnerView(mode: state.modeAnimated,
-                                stopPoint: spinnerStopPoint,
-                                refreshHoldPoint: headerShimMaxHeight / 2,
+             RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
+                                pullClipPoint: config.defaultSpinnerPullClipPoint,
+                                mode: state.modeAnimated,
+                                stopPoint: config.defaultSpinnerSpinnerStopPoint,
+                                refreshHoldPoint: config.headerShimMaxHeight / 2,
                                 refreshView: refreshView($state),
                                 headerInset: $headerInset,
-                                refreshAt: $refreshAt)
+                                refreshAt: config.refreshAt)
         }
     }
     
     @ViewBuilder
     private var systemStylerefreshSpinner: some View {
         if state.style == .system {
-            SystemStyleRefreshSpinner(state: state,
+            SystemStyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
+                                      state: state,
                                       position: distance,
-                                      refreshHoldPoint: headerShimMaxHeight / 2,
+                                      refreshHoldPoint: config.headerShimMaxHeight / 2,
                                       refreshView: refreshView($state))
         }
     }
@@ -142,7 +181,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             canRefresh = true
         }
         
-        state.dragPosition = normalize(from: 0, to: refreshAt, by: distance)
+        state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
         if case .refreshing = state.mode { return }
         if !canRefresh { return }
 
@@ -151,7 +190,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             return
         }
 
-        if distance >= refreshAt {
+        if distance >= config.refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             set(mode: .refreshing)
             canRefresh = false
