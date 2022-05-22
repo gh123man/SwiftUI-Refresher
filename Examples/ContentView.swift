@@ -38,7 +38,7 @@ struct ContentView: View {
                     Text("asdf")
                 }
             }
-            .refresher(config: Config(defaultSpinnerOffScreenPoint: -200, defaultSpinnerPullClipPoint: 0)) { done in
+            .refresher { done in
                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
                     refreshed += 1
                     done()
