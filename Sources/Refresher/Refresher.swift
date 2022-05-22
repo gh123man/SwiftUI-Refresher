@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Introspect
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 
@@ -22,13 +23,22 @@ public struct Config {
     /// How far you have to pull (from 0 - 1) for the spinner to start becoming visible
     public var systemSpinnerOpacityClipPoint: CGFloat
     
+    /// How long to hold the spinner before dismissing (a small delay is a nice UX if the refresh is VERY fast)
+    public var holdTime: DispatchTimeInterval
+    
+    /// How long to wait before hiding the refresh view if the user is not touching the screen.
+    /// This is a bit of a hack to make animations work.
+    public var hideTime: DispatchTimeInterval
+    
     public init(
         refreshAt: CGFloat = 120,
         headerShimMaxHeight: CGFloat = 75,
         defaultSpinnerSpinnerStopPoint: CGFloat = -50,
         defaultSpinnerOffScreenPoint: CGFloat = -300,
         defaultSpinnerPullClipPoint: CGFloat = 0.2,
-        systemSpinnerOpacityClipPoint: CGFloat = 0.2
+        systemSpinnerOpacityClipPoint: CGFloat = 0.2,
+        holdTime: DispatchTimeInterval = .milliseconds(300),
+        hideTime: DispatchTimeInterval = .milliseconds(300)
     ) {
         self.refreshAt = refreshAt
         self.defaultSpinnerSpinnerStopPoint = defaultSpinnerSpinnerStopPoint
@@ -36,6 +46,8 @@ public struct Config {
         self.defaultSpinnerOffScreenPoint = defaultSpinnerOffScreenPoint
         self.defaultSpinnerPullClipPoint = defaultSpinnerPullClipPoint
         self.systemSpinnerOpacityClipPoint = systemSpinnerOpacityClipPoint
+        self.holdTime = holdTime
+        self.hideTime = hideTime
     }
 }
 
@@ -88,6 +100,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     private var style: Style
     private var config: Config
     
+    @State private var uiScrollView: UIScrollView?
+    @State private var hideRefreshControl = true
+    
     init(
         axes: Axis.Set = .vertical,
         showsIndicators: Bool = true,
@@ -118,9 +133,17 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         return 0
     }
     
+    private var showRefreshControls: Bool {
+        guard let scrollView = uiScrollView else {
+            return false
+        }
+        
+        return scrollView.isTracking || !hideRefreshControl
+    }
+    
     @ViewBuilder
     private var refershSpinner: some View {
-        if (state.style == .default || state.style == .overlay) {
+        if showRefreshControls && (state.style == .default || state.style == .overlay) {
              RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
                                 pullClipPoint: config.defaultSpinnerPullClipPoint,
                                 mode: state.modeAnimated,
@@ -134,7 +157,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     
     @ViewBuilder
     private var systemStylerefreshSpinner: some View {
-        if state.style == .system {
+        if showRefreshControls && state.style == .system {
             SystemStyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                       state: state,
                                       position: distance,
@@ -150,8 +173,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             ScrollView(axes, showsIndicators: showsIndicators) {
                 ZStack(alignment: .top) {
                     OffsetReader { val in
-                        distance = val - headerInset
-                        offsetChanged()
+                        offsetChanged(val)
                     }
                     systemStylerefreshSpinner
                     
@@ -163,6 +185,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     // renders over content
                     refershSpinner
                 }
+            }
+            .introspectScrollView { scrollView in
+                uiScrollView = scrollView
             }
             .onChange(of: globalGeometry.frame(in: .global)) { val in
                 headerInset = val.minY
@@ -176,7 +201,13 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
     }
     
-    private func offsetChanged() {
+    private func offsetChanged(_ val: CGFloat) {
+        guard showRefreshControls else {
+            return
+        }
+        
+        distance = val - headerInset
+        
         if distance < 1 {
             canRefresh = true
         }
@@ -189,6 +220,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             set(mode: .notRefreshing)
             return
         }
+        hideRefreshControl = false
 
         if distance >= config.refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -196,8 +228,11 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             canRefresh = false
 
             refreshAction {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
                     set(mode: .notRefreshing)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + config.hideTime) {
+                        hideRefreshControl = true
+                    }
                 }
             }
 

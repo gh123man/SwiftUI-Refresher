@@ -111,11 +111,3 @@ Add the custom refresherView:
 ```
 
 ![Custom](/images/4.gif)
-
-## Want to help?
-
-### Here are some TODO items
-
-- Support `ListView`
-- don't trigger refresh until drag is released (how do you detect `touchDown` in a scrollview?)
-- expose the background padding view for customization
