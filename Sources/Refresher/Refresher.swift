@@ -26,10 +26,6 @@ public struct Config {
     /// How long to hold the spinner before dismissing (a small delay is a nice UX if the refresh is VERY fast)
     public var holdTime: DispatchTimeInterval
     
-    /// How long to wait before hiding the refresh view if the user is not touching the screen.
-    /// This is a bit of a hack to make animations work.
-    public var hideTime: DispatchTimeInterval
-    
     public init(
         refreshAt: CGFloat = 120,
         headerShimMaxHeight: CGFloat = 75,
@@ -37,8 +33,7 @@ public struct Config {
         defaultSpinnerOffScreenPoint: CGFloat = -300,
         defaultSpinnerPullClipPoint: CGFloat = 0.2,
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
-        holdTime: DispatchTimeInterval = .milliseconds(300),
-        hideTime: DispatchTimeInterval = .milliseconds(300)
+        holdTime: DispatchTimeInterval = .milliseconds(300)
     ) {
         self.refreshAt = refreshAt
         self.defaultSpinnerSpinnerStopPoint = defaultSpinnerSpinnerStopPoint
@@ -47,7 +42,6 @@ public struct Config {
         self.defaultSpinnerPullClipPoint = defaultSpinnerPullClipPoint
         self.systemSpinnerOpacityClipPoint = systemSpinnerOpacityClipPoint
         self.holdTime = holdTime
-        self.hideTime = hideTime
     }
 }
 
@@ -101,7 +95,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     private var config: Config
     
     @State private var uiScrollView: UIScrollView?
-    @State private var hideRefreshControl = true
+    @State private var showRefreshControl = true
     
     init(
         axes: Axis.Set = .vertical,
@@ -138,7 +132,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             return false
         }
         
-        return scrollView.isTracking || !hideRefreshControl
+        return scrollView.isTracking || showRefreshControl
     }
     
     @ViewBuilder
@@ -218,9 +212,10 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
 
         guard distance > 0 else {
             set(mode: .notRefreshing)
+            showRefreshControl = false
             return
         }
-        hideRefreshControl = false
+        showRefreshControl = true
 
         if distance >= config.refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -230,9 +225,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             refreshAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
                     set(mode: .notRefreshing)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + config.hideTime) {
-                        hideRefreshControl = true
-                    }
                 }
             }
 
