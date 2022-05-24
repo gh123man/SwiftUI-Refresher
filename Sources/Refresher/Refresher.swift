@@ -90,12 +90,12 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @State var state = RefresherState()
     @State var distance: CGFloat = 0
     @State var rawDistance: CGFloat = 0
-    @State var canRefresh = true
     private var style: Style
     private var config: Config
     
     @State private var uiScrollView: UIScrollView?
-    @State private var showRefreshControl = true
+    @State private var isRefresherVisible = true
+    @State private var isFingerDown = false
     
     init(
         axes: Axis.Set = .vertical,
@@ -127,12 +127,13 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         return 0
     }
     
+    private var isTracking: Bool {
+        guard let scrollView = uiScrollView else { return false }
+        return scrollView.isTracking
+    }
+    
     private var showRefreshControls: Bool {
-        guard let scrollView = uiScrollView else {
-            return false
-        }
-        
-        return scrollView.isTracking || showRefreshControl
+        return isFingerDown || isRefresherVisible
     }
     
     @ViewBuilder
@@ -196,31 +197,22 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     private func offsetChanged(_ val: CGFloat) {
-        guard showRefreshControls else {
-            return
-        }
-        
+        isFingerDown = isTracking
         distance = val - headerInset
-        
-        if distance < 1 {
-            canRefresh = true
-        }
-        
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
+        
         if case .refreshing = state.mode { return }
-        if !canRefresh { return }
-
-        guard distance > 0 else {
-            set(mode: .notRefreshing)
-            showRefreshControl = false
+        guard distance > 0, showRefreshControls else {
+            state.mode = .notRefreshing
+            isRefresherVisible = false
             return
         }
-        showRefreshControl = true
+        
+        isRefresherVisible = true
 
         if distance >= config.refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             set(mode: .refreshing)
-            canRefresh = false
 
             refreshAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
