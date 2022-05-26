@@ -26,14 +26,18 @@ public struct Config {
     /// How long to hold the spinner before dismissing (a small delay is a nice UX if the refresh is VERY fast)
     public var holdTime: DispatchTimeInterval
     
+    /// How close to resting position the scrollview has to move in order to allow the next refresh (finger must also be released from screen)
+    public var resetPoint: CGFloat
+    
     public init(
         refreshAt: CGFloat = 120,
         headerShimMaxHeight: CGFloat = 75,
         defaultSpinnerSpinnerStopPoint: CGFloat = -50,
-        defaultSpinnerOffScreenPoint: CGFloat = -300,
-        defaultSpinnerPullClipPoint: CGFloat = 0.2,
+        defaultSpinnerOffScreenPoint: CGFloat = -150,
+        defaultSpinnerPullClipPoint: CGFloat = 0.1,
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
-        holdTime: DispatchTimeInterval = .milliseconds(300)
+        holdTime: DispatchTimeInterval = .milliseconds(300),
+        resetPoint: CGFloat = 5
     ) {
         self.refreshAt = refreshAt
         self.defaultSpinnerSpinnerStopPoint = defaultSpinnerSpinnerStopPoint
@@ -42,6 +46,7 @@ public struct Config {
         self.defaultSpinnerPullClipPoint = defaultSpinnerPullClipPoint
         self.systemSpinnerOpacityClipPoint = systemSpinnerOpacityClipPoint
         self.holdTime = holdTime
+        self.resetPoint = resetPoint
     }
 }
 
@@ -96,6 +101,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @State private var uiScrollView: UIScrollView?
     @State private var isRefresherVisible = true
     @State private var isFingerDown = false
+    @State private var canRefresh = true
     
     init(
         axes: Axis.Set = .vertical,
@@ -201,7 +207,10 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         distance = val - headerInset
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
         
-        if case .refreshing = state.mode { return }
+        guard canRefresh else {
+            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing && !isFingerDown
+            return
+        }
         guard distance > 0, showRefreshControls else {
             state.mode = .notRefreshing
             isRefresherVisible = false
@@ -213,6 +222,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if distance >= config.refreshAt {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             set(mode: .refreshing)
+            canRefresh = false
 
             refreshAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
