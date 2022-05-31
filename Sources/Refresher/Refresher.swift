@@ -14,7 +14,8 @@ public struct Config {
     /// Offset where the spinner stops moving after draging
     public var defaultSpinnerSpinnerStopPoint: CGFloat
     
-    /// Off screen start point for the spinner
+    /// Off screen start point for the spinner (relative to the top of the screen)
+    /// TIP: set this to the max height of your spinner view if using a custom spinner.
     public var defaultSpinnerOffScreenPoint: CGFloat
     
     /// How far you have to pull (from 0 - 1) for the spinner to start moving
@@ -33,7 +34,7 @@ public struct Config {
         refreshAt: CGFloat = 120,
         headerShimMaxHeight: CGFloat = 75,
         defaultSpinnerSpinnerStopPoint: CGFloat = -50,
-        defaultSpinnerOffScreenPoint: CGFloat = -150,
+        defaultSpinnerOffScreenPoint: CGFloat = -50,
         defaultSpinnerPullClipPoint: CGFloat = 0.1,
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
         holdTime: DispatchTimeInterval = .milliseconds(300),
@@ -145,7 +146,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @ViewBuilder
     private var refershSpinner: some View {
         if showRefreshControls && (state.style == .default || state.style == .overlay) {
-             RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
+            RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
                                 pullClipPoint: config.defaultSpinnerPullClipPoint,
                                 mode: state.modeAnimated,
                                 stopPoint: config.defaultSpinnerSpinnerStopPoint,
@@ -208,7 +209,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
         
         guard canRefresh else {
-            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing && !isFingerDown
+            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing
             return
         }
         guard distance > 0, showRefreshControls else {

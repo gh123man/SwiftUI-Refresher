@@ -17,7 +17,13 @@ public struct RefreshSpinnerView<RefreshView: View>: View {
         if case .refreshing = mode {
             return lerp(from: refreshHoldPoint, to: stopPoint, by: percent)
         }
-        return lerp(from: offScreenPoint, to: stopPoint, by: normalize(from: pullClipPoint, to: 1, by: percent))
+        let normalizedPercent = normalize(from: pullClipPoint, to: 1, by: percent)
+        if normalizedPercent == 0 {
+            // Since the spinner view moves with the scrollview, move it
+            // backwards until we are ready to start the refreshing animation
+            return -headerInset + offScreenPoint * (1 + percent)
+        }
+        return lerp(from: -headerInset + offScreenPoint, to: stopPoint, by: normalizedPercent)
     }
     
     public var body: some View {

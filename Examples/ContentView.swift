@@ -5,9 +5,15 @@ import Refresher
 struct ContentView: View {
     
     @State var refreshed = 0
+    @State var searchText = ""
     var body: some View {
         NavigationView {
             ScrollView {
+                if #available(iOS 15.0, *) {
+                    Text("Searching for \(searchText)")
+                        .searchable(text: $searchText)
+                        .navigationTitle("Searchable")
+                }
                 VStack {
                     Text("Hello, world!")
                     Text("Refreshed: \(refreshed)")
@@ -34,6 +40,10 @@ struct ContentView: View {
                     Text("Go to details with system style - no image")
                         .padding()
                 }
+                NavigationLink(destination: DetailsSearch()) {
+                    Text("Go to details with system style and search bar in header")
+                        .padding()
+                }
                 ForEach((1...100), id: \.self) { _ in
                     Text("asdf")
                 }
@@ -46,6 +56,31 @@ struct ContentView: View {
             }
             .navigationTitle("Refresher")
         }
+    }
+}
+
+struct DetailsSearch: View {
+    @State var refreshed = 0
+    @State var searchText = ""
+    var body: some View {
+        ScrollView {
+            VStack {
+                if #available(iOS 15.0, *) {
+                    Text("Searching for \(searchText)")
+                        .searchable(text: $searchText)
+                        .navigationTitle("Searchable")
+                }
+                Text("Details!")
+                Text("Refreshed: \(refreshed)")
+            }
+        }
+        .refresher(style: .system) { done in
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                refreshed += 1
+                done()
+            }
+        }
+        .navigationBarTitle("", displayMode: .inline)
     }
 }
 
