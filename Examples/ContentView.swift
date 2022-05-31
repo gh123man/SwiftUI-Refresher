@@ -48,11 +48,9 @@ struct ContentView: View {
                     Text("asdf")
                 }
             }
-            .refresher { done in
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                    refreshed += 1
-                    done()
-                }
+            .refresher {
+                await Task.sleep(seconds: 2)
+                refreshed += 1
             }
             .navigationTitle("Refresher")
         }
@@ -74,11 +72,9 @@ struct DetailsSearch: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
-        .refresher(style: .system) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                refreshed += 1
-                done()
-            }
+        .refresher(style: .system) {
+            await Task.sleep(seconds: 2)
+            refreshed += 1
         }
         .navigationBarTitle("", displayMode: .inline)
     }
@@ -100,11 +96,9 @@ struct DetailsView: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
-        .refresher(style: style) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                refreshed += 1
-                done()
-            }
+        .refresher(style: style) {
+            await Task.sleep(seconds: 2)
+            refreshed += 1
         }
         .navigationBarTitle("", displayMode: .inline)
     }
@@ -128,11 +122,9 @@ struct DetailsOverlayView: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
-        .refresher(style: .overlay) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                refreshed += 1
-                done()
-            }
+        .refresher(style: .overlay) {
+            await Task.sleep(seconds: 2)
+            refreshed += 1
         }
         .navigationBarTitle("", displayMode: .inline)
     }
@@ -150,11 +142,9 @@ struct DetailsCustom: View {
                 Text("Refreshed: \(refreshed)")
             }
         }
-        .refresher(refreshView: EmojiRefreshView.init ) { done in
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1500)) {
-                refreshed += 1
-                done()
-            }
+        .refresher(refreshView: EmojiRefreshView.init ) {
+            await Task.sleep(seconds: 1.5)
+            refreshed += 1
         }
         .navigationBarTitle("", displayMode: .inline)
     }
@@ -200,5 +190,12 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
         DetailsView(style: .default)
         DetailsOverlayView()
+    }
+}
+
+extension Task where Success == Never, Failure == Never {
+    static func sleep(seconds: Double) async {
+        let duration = UInt64(seconds * 1_000_000_000)
+        try! await Task.sleep(nanoseconds: duration)
     }
 }

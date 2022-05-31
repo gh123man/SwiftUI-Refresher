@@ -3,6 +3,7 @@ import SwiftUI
 import Introspect
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
+public typealias AsyncRefreshAction = () async -> ()
 
 public struct Config {
     /// Drag distance needed to trigger a refresh
@@ -209,7 +210,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
         
         guard canRefresh else {
-            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing
+            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing && !isFingerDown
             return
         }
         guard distance > 0, showRefreshControls else {
@@ -225,8 +226,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             set(mode: .refreshing)
             canRefresh = false
 
-            refreshAction {
-                DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
+                refreshAction {
                     set(mode: .notRefreshing)
                 }
             }

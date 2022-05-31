@@ -27,15 +27,21 @@ struct DetailsView: View {
             Text("Refreshed: \(refreshed)")
         }
         .refresher { done in // Called when pulled to refresh
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                refreshed += 1
-                done() // Stops the refresh view (can be called on a background thread)
-            }
+            await Task.sleep(seconds: 2)
+            refreshed += 1
         }
     }
 }
-
 ```
+
+## Features
+ - `async`/`await` compatible - even on iOS 14
+ - completion callback also supported for `DispatchQueue` operations
+ - `.default` and `.system` styles (see below for details)
+ - customizable refresh spinner (see below for example)
+
+
+## Examples and usage
 
 See: [Examples](/Examples/) for a full sample project with multiple implementations
 
@@ -111,3 +117,15 @@ Add the custom refresherView:
 ```
 
 ![Custom](/images/4.gif)
+
+## Completion handler
+
+If you prefer to call a completion to stop the refresher: 
+```swift 
+.refresher(style: .system) { done in
+    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+        refreshed += 1
+        done()
+    }
+}
+```
