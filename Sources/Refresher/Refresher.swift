@@ -188,10 +188,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         if showRefreshControls && state.style == .system2 {
             System2StyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                        state: state,
-                                       position: state.dragPosition,
                                        refreshHoldPoint: config.headerShimMaxHeight / 2,
-                                       refreshView: refreshView($state),
-                                       refreshAt: config.refreshAt)
+                                       refreshView: refreshView($state))
         }
     }
     

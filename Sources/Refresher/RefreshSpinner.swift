@@ -62,16 +62,14 @@ public struct System2StyleRefreshSpinner<RefreshView: View>: View {
     var opacityClipPoint: CGFloat
     
     var state: RefresherState
-    var position: CGFloat
     var refreshHoldPoint: CGFloat
     var refreshView: RefreshView
-    var refreshAt: CGFloat
     
     func offset() -> CGFloat {
         switch state.mode {
         case .refreshing, .notRefreshing:
             return refreshHoldPoint
-        default: return lerp(from: 0, to: refreshHoldPoint, by: position)
+        default: return lerp(from: 0, to: refreshHoldPoint, by: state.dragPosition)
         }
     }
     
