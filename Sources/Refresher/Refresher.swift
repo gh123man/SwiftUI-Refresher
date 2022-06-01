@@ -42,7 +42,7 @@ public struct Config {
         defaultSpinnerPullClipPoint: CGFloat = 0.1,
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
         holdTime: DispatchTimeInterval = .milliseconds(300),
-        cooldown: DispatchTimeInterval = .seconds(2),
+        cooldown: DispatchTimeInterval = .milliseconds(500),
         resetPoint: CGFloat = 5
     ) {
         self.refreshAt = refreshAt
@@ -64,6 +64,7 @@ public enum Style {
     
     /// Mimic the system refresh controller as close as possible
     case system
+    case system2
     
     /// Overlay the spinner onto the cotained view - good for static images
     case overlay
@@ -134,6 +135,14 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             if case .refreshing = state.modeAnimated {
                 return config.headerShimMaxHeight * (1 - state.dragPosition)
             }
+        case .system2:
+            switch state.modeAnimated {
+            case .pulling:
+                return config.headerShimMaxHeight * (state.dragPosition)
+            case .refreshing:
+                return config.headerShimMaxHeight
+            default: break
+            }
         default: break
         }
         
@@ -174,6 +183,18 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
     }
     
+    @ViewBuilder
+    private var system2StylerefreshSpinner: some View {
+        if showRefreshControls && state.style == .system2 {
+            System2StyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
+                                       state: state,
+                                       position: state.dragPosition,
+                                       refreshHoldPoint: config.headerShimMaxHeight / 2,
+                                       refreshView: refreshView($state),
+                                       refreshAt: config.refreshAt)
+        }
+    }
+    
     public var body: some View {
         // The ordering of views and operations here is very important - things break
         // in very strange ways between iOS 14 and iOS 15.
@@ -184,6 +205,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         offsetChanged(val)
                     }
                     systemStylerefreshSpinner
+                    system2StylerefreshSpinner
                     
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
@@ -213,10 +235,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         isFingerDown = isTracking
         distance = val - headerInset
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
-        print("state: \(canRefresh) \(isRefresherVisible)")
         
         guard canRefresh else {
-            canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing && !isFingerDown
+            canRefresh = (distance <= config.resetPoint && !isFingerDown) && (state.mode == .notRefreshing && !isFingerDown)
             return
         }
         guard distance > 0, showRefreshControls else {
@@ -238,6 +259,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     set(mode: .notRefreshing)
                     DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
                         self.canRefresh = true
+                        self.isRefresherVisible = false
                     }
                 }
             }

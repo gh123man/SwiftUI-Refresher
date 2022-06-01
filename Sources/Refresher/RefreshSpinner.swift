@@ -57,3 +57,33 @@ public struct SystemStyleRefreshSpinner<RefreshView: View>: View {
         }
     }
 }
+
+public struct System2StyleRefreshSpinner<RefreshView: View>: View {
+    var opacityClipPoint: CGFloat
+    
+    var state: RefresherState
+    var position: CGFloat
+    var refreshHoldPoint: CGFloat
+    var refreshView: RefreshView
+    var refreshAt: CGFloat
+    
+    func offset() -> CGFloat {
+        switch state.mode {
+        case .refreshing, .notRefreshing:
+            return refreshHoldPoint
+        default: return lerp(from: 0, to: refreshHoldPoint, by: position)
+        }
+    }
+    
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geometry in
+                refreshView
+                    .frame(maxWidth: .infinity)
+                    .position(x: geometry.size.width / 2, y: offset())
+                    .opacity(state.modeAnimated == .refreshing ? 1 : normalize(from: opacityClipPoint, to: 1, by: state.dragPosition))
+                    .animation(.easeInOut(duration: 0.2), value: state.modeAnimated == .notRefreshing)
+            }
+        }
+    }
+}
