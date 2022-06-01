@@ -251,9 +251,10 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             set(mode: .refreshing)
             canRefresh = false
 
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
-                refreshAction {
+            refreshAction {
+                // The ordering here is important - calling `set` on the main queue after `refreshAction` prevents
+                // strange animaton behaviors on some complex views
+                DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
                     set(mode: .notRefreshing)
                     DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
                         self.canRefresh = true
