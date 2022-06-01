@@ -28,6 +28,9 @@ public struct Config {
     /// How long to hold the spinner before dismissing (a small delay is a nice UX if the refresh is VERY fast)
     public var holdTime: DispatchTimeInterval
     
+    /// How long to wait before allowing the next refresh
+    public var cooldown: DispatchTimeInterval
+    
     /// How close to resting position the scrollview has to move in order to allow the next refresh (finger must also be released from screen)
     public var resetPoint: CGFloat
     
@@ -39,6 +42,7 @@ public struct Config {
         defaultSpinnerPullClipPoint: CGFloat = 0.1,
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
         holdTime: DispatchTimeInterval = .milliseconds(300),
+        cooldown: DispatchTimeInterval = .seconds(2),
         resetPoint: CGFloat = 5
     ) {
         self.refreshAt = refreshAt
@@ -48,6 +52,7 @@ public struct Config {
         self.defaultSpinnerPullClipPoint = defaultSpinnerPullClipPoint
         self.systemSpinnerOpacityClipPoint = systemSpinnerOpacityClipPoint
         self.holdTime = holdTime
+        self.cooldown = cooldown
         self.resetPoint = resetPoint
     }
 }
@@ -208,6 +213,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         isFingerDown = isTracking
         distance = val - headerInset
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
+        print("state: \(canRefresh) \(isRefresherVisible)")
         
         guard canRefresh else {
             canRefresh = distance <= config.resetPoint && state.mode == .notRefreshing && !isFingerDown
@@ -230,6 +236,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
                 refreshAction {
                     set(mode: .notRefreshing)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
+                        self.canRefresh = true
+                    }
                 }
             }
 
