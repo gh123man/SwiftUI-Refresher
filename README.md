@@ -26,7 +26,7 @@ struct DetailsView: View {
             Text("Details!")
             Text("Refreshed: \(refreshed)")
         }
-        .refresher { done in // Called when pulled to refresh
+        .refresher { // Called when pulled to refresh
             await Task.sleep(seconds: 2)
             refreshed += 1
         }
@@ -125,7 +125,7 @@ If you prefer to call a completion to stop the refresher:
 .refresher(style: .system) { done in
     DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
         refreshed += 1
-        done()
+        done() // Call done to stop the refresher
     }
 }
 ```
