@@ -259,7 +259,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
                         self.canRefresh = true
                         self.isRefresherVisible = false
-						self.uiScrollView?.setContentOffset(.zero, animated: true)
+						self.uiScrollView?.setContentOffset(CGPoint(x: 0, y: -headerInset), animated: true)
                     }
                 }
             }
