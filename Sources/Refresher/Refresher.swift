@@ -215,7 +215,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 }
             }
             .introspectScrollView { scrollView in
-                uiScrollView = scrollView
+                DispatchQueue.main.async {
+                    uiScrollView = scrollView
+                }
             }
             .onChange(of: globalGeometry.frame(in: .global)) { val in
                 headerInset = val.minY
