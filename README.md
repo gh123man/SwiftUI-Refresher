@@ -12,6 +12,8 @@ A customizable, native Swift UI refresh control for iOS 14+
 ## See it in action
 If you want to see it in a real app, check out [dateit](https://apps.apple.com/us/app/dateit/id1610780514)
 
+Also works well with [ScrollViewLoader](https://github.com/gh123man/ScrollViewLoader)
+
 ## Usage 
 First add the package to your project. 
 
