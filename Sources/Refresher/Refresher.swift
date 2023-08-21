@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-import Introspect
+import SwiftUIIntrospect
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 public typealias AsyncRefreshAction = () async -> ()
@@ -214,7 +214,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     refershSpinner
                 }
             }
-            .introspectScrollView { scrollView in
+            .introspect(.scrollView, on: .iOS(.v14, .v15, .v16, .v17)) { scrollView in
                 DispatchQueue.main.async {
                     uiScrollView = scrollView
                 }
