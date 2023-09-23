@@ -262,7 +262,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             renderLock = true
             canRefresh = false
             set(mode: .refreshing)
-            print("Start Refresh")
             
             refreshAction {
                 // The ordering here is important - calling `set` on the main queue after `refreshAction` prevents
