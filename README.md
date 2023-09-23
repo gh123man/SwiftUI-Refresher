@@ -64,7 +64,7 @@ See: [Examples](/Examples/) for a full sample project with multiple implementati
 ![Overlay](/images/2.gif)
 
 ### System style
-`Refresher`'s default animation is designed to be more flexible that the system animation style. If you want `Refresher` to behave more like they system refresh control, you can change the style:
+`Refresher`'s default animation is designed to be more flexible than the system animation style. If you want `Refresher` to behave more like they system refresh control, you can change the style:
 
 ```swift
 .refresher(style: .system) { done in
