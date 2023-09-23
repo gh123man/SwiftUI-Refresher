@@ -35,7 +35,7 @@ public struct Config {
     public var resetPoint: CGFloat
     
     public init(
-        refreshAt: CGFloat = 120,
+        refreshAt: CGFloat = 90,
         headerShimMaxHeight: CGFloat = 75,
         defaultSpinnerSpinnerStopPoint: CGFloat = -50,
         defaultSpinnerOffScreenPoint: CGFloat = -50,
@@ -251,18 +251,18 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
             return
         }
         guard distance > 0, showRefreshControls else {
-            state.mode = .notRefreshing
             isRefresherVisible = false
             return
         }
         
         isRefresherVisible = true
 
-        if distance >= config.refreshAt {
+        if distance >= config.refreshAt, !renderLock {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             renderLock = true
             canRefresh = false
             set(mode: .refreshing)
+            print("Start Refresh")
             
             refreshAction {
                 // The ordering here is important - calling `set` on the main queue after `refreshAction` prevents
@@ -276,7 +276,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 }
             }
 
-        } else if distance > 0 {
+        } else if distance > 0, state.mode != .refreshing {
             set(mode: .pulling)
         }
     }
