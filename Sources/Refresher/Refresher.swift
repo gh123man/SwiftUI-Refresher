@@ -103,7 +103,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     @State var state = RefresherState()
     @State var distance: CGFloat = 0
     @State var rawDistance: CGFloat = 0
-    @State var renderLock = false
     private var style: Style
     private var config: Config
     
@@ -206,13 +205,10 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     systemStylerefreshSpinner
                     system2StylerefreshSpinner
                     
-                    
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
-                        LockedRenderView(lock: $renderLock) {
-                            content
-                        }
-                        .offset(y: refreshHeaderOffset)
+                        content
+                            .offset(y: refreshHeaderOffset)
                     }
                     // renders over content
                     refershSpinner
@@ -240,12 +236,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         distance = val - headerInset
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
         
-        
-        // If the refresh state has settled, we are not touching the screen, and the offset has settled, we can signal the view to update itself.
-        if canRefresh, !isFingerDown, distance <= 0 {
-            renderLock = false
-        }
-        
         guard canRefresh else {
             canRefresh = (distance <= config.resetPoint && !isFingerDown) && (state.mode == .notRefreshing && !isFingerDown)
             return
@@ -259,10 +249,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
 
         if distance >= config.refreshAt, !renderLock {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            renderLock = true
-            canRefresh = false
             set(mode: .refreshing)
-            
+            canRefresh = false
+
             refreshAction {
                 // The ordering here is important - calling `set` on the main queue after `refreshAction` prevents
                 // strange animaton behaviors on some complex views
