@@ -268,6 +268,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 // strange animaton behaviors on some complex views
                 DispatchQueue.main.asyncAfter(deadline: .now() + config.holdTime) {
                     set(mode: .notRefreshing)
+                    self.renderLock = false
+                    
                     DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
                         self.canRefresh = true
                         self.isRefresherVisible = false
