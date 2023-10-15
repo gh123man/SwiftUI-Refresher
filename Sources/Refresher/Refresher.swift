@@ -33,7 +33,10 @@ public struct Config {
     
     /// How close to resting position the scrollview has to move in order to allow the next refresh (finger must also be released from screen)
     public var resetPoint: CGFloat
-    
+
+    /// Determines whether to trigger a refresh when the finger is released.
+    public var isRefreshingWhenReleasedFinger: Bool
+
     public init(
         refreshAt: CGFloat = 90,
         headerShimMaxHeight: CGFloat = 75,
@@ -43,7 +46,8 @@ public struct Config {
         systemSpinnerOpacityClipPoint: CGFloat = 0.2,
         holdTime: DispatchTimeInterval = .milliseconds(300),
         cooldown: DispatchTimeInterval = .milliseconds(500),
-        resetPoint: CGFloat = 5
+        resetPoint: CGFloat = 5,
+        isRefreshingWhenReleasedFinger: Bool = false
     ) {
         self.refreshAt = refreshAt
         self.defaultSpinnerSpinnerStopPoint = defaultSpinnerSpinnerStopPoint
@@ -54,6 +58,7 @@ public struct Config {
         self.holdTime = holdTime
         self.cooldown = cooldown
         self.resetPoint = resetPoint
+        self.isRefreshingWhenReleasedFinger = isRefreshingWhenReleasedFinger
     }
 }
 
@@ -257,7 +262,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         
         isRefresherVisible = true
 
-        if distance >= config.refreshAt, !renderLock {
+        let canRefreshing = ((config.isRefreshingWhenReleasedFinger && !isFingerDown) || !config.isRefreshingWhenReleasedFinger)
+        if distance >= config.refreshAt, !renderLock, canRefreshing {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             renderLock = true
             canRefresh = false
