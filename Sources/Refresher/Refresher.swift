@@ -88,7 +88,7 @@ public struct RefresherState {
     public var dragPosition: CGFloat = 0
     
     /// the configuration style - useful if you want your custom spinner to change behavior based on the style
-    public var style: Style = .default
+    public let style: Style
 }
 
 
@@ -100,13 +100,13 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     var refreshView: (Binding<RefresherState>) -> RefreshView
     
     @State private var headerInset: CGFloat = 1000000 // Somewhere far off screen
-    @State var state = RefresherState()
+    @State var state: RefresherState
     @State var distance: CGFloat = 0
     @State var rawDistance: CGFloat = 0
     @State var renderLock = false
-    private var style: Style
-    private var config: Config
-    
+    private let style: Style
+    private let config: Config
+
     @State private var uiScrollView: UIScrollView?
     @State private var isRefresherVisible = true
     @State private var isFingerDown = false
@@ -128,6 +128,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         self.content = content
         self.style = style
         self.config = config
+        self._state = .init(wrappedValue: RefresherState(style: style))
     }
     
     private var refreshHeaderOffset: CGFloat {
@@ -161,7 +162,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     
     @ViewBuilder
     private var refershSpinner: some View {
-        if showRefreshControls && (state.style == .default || state.style == .overlay) {
+        if style == .default || style == .overlay {
             RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
                                 pullClipPoint: config.defaultSpinnerPullClipPoint,
                                 mode: state.modeAnimated,
@@ -170,27 +171,30 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                                 refreshView: refreshView($state),
                                 headerInset: $headerInset,
                                 refreshAt: config.refreshAt)
+                .opacity(showRefreshControls ? 1 : 0)
         }
     }
     
     @ViewBuilder
     private var systemStylerefreshSpinner: some View {
-        if showRefreshControls && state.style == .system {
+        if style == .system {
             SystemStyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                       state: state,
                                       position: distance,
                                       refreshHoldPoint: config.headerShimMaxHeight / 2,
                                       refreshView: refreshView($state))
+                .opacity(showRefreshControls ? 1 : 0)
         }
     }
     
     @ViewBuilder
     private var system2StylerefreshSpinner: some View {
-        if showRefreshControls && state.style == .system2 {
+        if style == .system2 {
             System2StyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                        state: state,
                                        refreshHoldPoint: config.headerShimMaxHeight / 2,
                                        refreshView: refreshView($state))
+                .opacity(showRefreshControls ? 1 : 0)
         }
     }
     
@@ -227,7 +231,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                 headerInset = val.minY
             }
             .onAppear {
-                state.style = style
                 DispatchQueue.main.async {
                     headerInset = globalGeometry.frame(in: .global).minY
                 }
