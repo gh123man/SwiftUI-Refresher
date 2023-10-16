@@ -250,7 +250,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
         
         guard canRefresh else {
-            canRefresh = (distance <= config.resetPoint && !isFingerDown) && (state.mode == .notRefreshing && !isFingerDown)
+            canRefresh = distance <= config.resetPoint && !isFingerDown && state.mode == .notRefreshing
             return
         }
         guard distance > 0, showRefreshControls else {
@@ -274,7 +274,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     self.renderLock = false
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + config.cooldown) {
-                        self.canRefresh = true
+                        self.canRefresh = !isFingerDown
                         self.isRefresherVisible = false
                     }
                 }
