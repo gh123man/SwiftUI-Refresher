@@ -1,9 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Brian Floersch on 4/19/22.
-//
 #if canImport(UIKit)
 import Foundation
 import UIKit

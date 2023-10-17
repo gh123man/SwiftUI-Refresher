@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 
 struct UIActivityView: UIViewRepresentable {
-    
     var style: UIActivityIndicatorView.Style = .medium
     @Binding var isAnimating: Bool
     
@@ -22,9 +21,7 @@ struct UIActivityView: UIViewRepresentable {
     }
 }
 
-
 public struct DefaultRefreshView: View {
-    
     @Binding var state: RefresherState
     @State var isAnimating = false
     
@@ -58,4 +55,3 @@ public struct DefaultRefreshView: View {
         }
     }
 }
-

@@ -1,4 +1,3 @@
-
 #if canImport(UIKit)
 import Foundation
 import SwiftUI
@@ -21,5 +20,4 @@ struct BlurView: UIViewRepresentable {
         uiView.effect = UIBlurEffect(style: self.style)
     }
 }
-
 #endif
