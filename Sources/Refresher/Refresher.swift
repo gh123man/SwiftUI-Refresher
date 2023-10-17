@@ -250,7 +250,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         }
         
         guard canRefresh else {
-            canRefresh = distance <= config.resetPoint && !isFingerDown && state.mode == .notRefreshing
+            canRefresh = distance <= config.resetPoint && !isFingerDown && state.mode != .refreshing
             return
         }
         guard distance > 0, showRefreshControls else {
