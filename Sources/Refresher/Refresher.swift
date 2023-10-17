@@ -58,7 +58,6 @@ public struct Config {
 }
 
 public enum Style {
-    
     /// Spinner pulls down and centers on a padding view above the scrollview
     case `default`
     
@@ -77,7 +76,6 @@ public enum RefreshMode {
 }
 
 public struct RefresherState {
-    
     /// Updated without animation - NOTE: Both modes are always updated in sequence (this one is first)
     public var mode: RefreshMode = .notRefreshing
     
@@ -161,7 +159,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     @ViewBuilder
-    private var refershSpinner: some View {
+    private var refreshSpinner: some View {
         if style == .default || style == .overlay {
             RefreshSpinnerView(offScreenPoint: config.defaultSpinnerOffScreenPoint,
                                 pullClipPoint: config.defaultSpinnerPullClipPoint,
@@ -176,7 +174,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     @ViewBuilder
-    private var systemStylerefreshSpinner: some View {
+    private var systemStyleRefreshSpinner: some View {
         if style == .system {
             SystemStyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                       state: state,
@@ -188,7 +186,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
     }
     
     @ViewBuilder
-    private var system2StylerefreshSpinner: some View {
+    private var system2StyleRefreshSpinner: some View {
         if style == .system2 {
             System2StyleRefreshSpinner(opacityClipPoint: config.systemSpinnerOpacityClipPoint,
                                        state: state,
@@ -207,9 +205,8 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     OffsetReader { val in
                         offsetChanged(val)
                     }
-                    systemStylerefreshSpinner
-                    system2StylerefreshSpinner
-                    
+                    systemStyleRefreshSpinner
+                    system2StyleRefreshSpinner
                     
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
@@ -219,7 +216,7 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                         .offset(y: refreshHeaderOffset)
                     }
                     // renders over content
-                    refershSpinner
+                    refreshSpinner
                 }
             }
             .introspect(.scrollView, on: .iOS(.v14, .v15, .v16, .v17)) { scrollView in
@@ -242,7 +239,6 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         isFingerDown = isTracking
         distance = val - headerInset
         state.dragPosition = normalize(from: 0, to: config.refreshAt, by: distance)
-        
         
         // If the refresh state has settled, we are not touching the screen, and the offset has settled, we can signal the view to update itself.
         if canRefresh, !isFingerDown, distance <= 0 {

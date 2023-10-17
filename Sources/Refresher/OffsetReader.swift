@@ -2,9 +2,9 @@ import Foundation
 import SwiftUI
 
 struct OffsetReader: View {
-    
     var onChange: (CGFloat) -> ()
     @State private var frame = CGRect()
+
     public var body: some View {
         GeometryReader { geometry in
             Spacer(minLength: 0)
