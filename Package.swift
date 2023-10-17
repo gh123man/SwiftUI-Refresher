@@ -18,6 +18,7 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/siteline/SwiftUI-Introspect.git", from: "1.0.0"),
+        .package(url: "https://github.com/gh123man/SwiftUI-RenderLock", from: "1.0.1"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -27,7 +28,10 @@ let package = Package(
             dependencies: [
                 .product(
                     name: "SwiftUIIntrospect",
-                    package: "SwiftUI-Introspect")
+                    package: "SwiftUI-Introspect"),
+                .product(
+                    name: "RenderLock",
+                    package: "SwiftUI-RenderLock")
             ]
         ),
     ]

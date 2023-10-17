@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import SwiftUIIntrospect
+import RenderLock
 
 public typealias RefreshAction = (_ completion: @escaping () -> ()) -> ()
 public typealias AsyncRefreshAction = () async -> ()
@@ -210,10 +211,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
                     
                     // Content wrapper with refresh banner
                     VStack(spacing: 0) {
-                        LockedRenderView(lock: $renderLock) {
-                            content
-                        }
-                        .offset(y: refreshHeaderOffset)
+                        content
+                            .renderLocked(with: $renderLock)
+                            .offset(y: refreshHeaderOffset)
                     }
                     // renders over content
                     refreshSpinner
