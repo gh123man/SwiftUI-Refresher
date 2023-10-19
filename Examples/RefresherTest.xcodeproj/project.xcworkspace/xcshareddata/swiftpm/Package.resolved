@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gh123man/SwiftUI-RenderLock",
       "state" : {
-        "revision" : "122050e7a84febbb3e7959f9fcfa25783c6abbfb",
-        "version" : "1.0.1"
+        "revision" : "11ca0d472dad0053cb8b29701ea3f108b9aa2304",
+        "version" : "1.0.2"
       }
     }
   ],
