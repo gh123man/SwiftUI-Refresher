@@ -257,7 +257,9 @@ public struct RefreshableScrollView<Content: View, RefreshView: View>: View {
         isRefresherVisible = true
 
         if distance >= config.refreshAt, !renderLock {
+            #if !os(visionOS)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            #endif
             renderLock = true
             canRefresh = false
             set(mode: .refreshing)
