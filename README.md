@@ -1,6 +1,6 @@
 # Refresher
 
-A customizable, native Swift UI refresh control for iOS 14+
+A customizable, native SwiftUI refresh control for iOS 14+
 
 ## Why?
 
