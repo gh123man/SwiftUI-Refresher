@@ -84,6 +84,8 @@ struct DetailsView: View {
     @State var refreshed = 0
     var style: Style
     @State var useImage = true
+    let rectangles = (0..<50).map { _ in CGFloat.random(in: 10..<50) }
+
     var body: some View {
         ScrollView {
             VStack {
@@ -94,6 +96,25 @@ struct DetailsView: View {
                 }
                 Text("Details!")
                 Text("Refreshed: \(refreshed)")
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 8) {
+                        ForEach(0..<10) { _ in
+                            Rectangle()
+                                .frame(width: 100, height: 100)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)) {
+                    ForEach(rectangles, id: \.self) { size in
+                        VStack {
+                            Rectangle()
+                                .frame(width: size, height: size)
+                            Text("text")
+                        }
+                    }
+                }
             }
         }
         .refresher(style: style) {
