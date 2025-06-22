@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/siteline/SwiftUI-Introspect.git", from: "1.2.0"),
+        .package(url: "https://github.com/siteline/SwiftUI-Introspect.git", from: "1.4.0-beta.2"),
         .package(url: "https://github.com/gh123man/SwiftUI-RenderLock", from: "1.0.2"),
     ],
     targets: [
